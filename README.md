@@ -1,4 +1,4 @@
-# gg-scripts
+# gg-wf-scripts
 
 A declarative attribute engine for Webflow sites backed by Supabase. Add `gg-*` attributes to your markup and the library handles data binding, URL-driven state, dialogs, auth gating, form visibility, and user actions.
 
@@ -13,7 +13,7 @@ npm install gg-scripts
 Create a site-specific entry file, register your queries and actions, then bundle it with esbuild.
 
 ```js
-import { init } from "gg-scripts";
+import { init } from "gg-wf-scripts";
 
 const app = init({
   supabaseUrl: "https://your-project.supabase.co",
@@ -261,5 +261,5 @@ import {
   applySwitchState,   // toggle [gg-case] children to match state
   setQueryParams,     // programmatically set URL params
   removeQueryParams,  // programmatically remove URL params
-} from "gg-scripts";
+} from "gg-wf-scripts";
 ```
