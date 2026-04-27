@@ -26,9 +26,11 @@ export { getPath } from "./helpers/path.js";
  *   Subscribe to auth changes. Called with the new user id (or null) whenever it changes.
  * @param {(context: object, userId: string) => Promise<string|null>} [options.auth.roleQuery]
  *   Returns the user's role string for gg-role gating. If omitted, gg-role is never set.
+ * @param {boolean} [options.debug=false] - When true, every query and action is logged to the
+ *   console with its trigger/container, data, result, and duration.
  * @returns {{ addQuery: function, addAction: function, start: function }}
  */
-export function init({ context = {}, auth } = {}) {
+export function init({ context = {}, auth, debug = false } = {}) {
   return {
     addQuery: registerQuery,
     addAction: registerAction,
@@ -40,8 +42,8 @@ export function init({ context = {}, auth } = {}) {
         initDialog();
         initBridges();
         initFormVisibility();
-        initDataEngine(context);
-        initActionEngine(context);
+        initDataEngine(context, { debug });
+        initActionEngine(context, { debug });
       }
 
       if (document.readyState === "loading") {

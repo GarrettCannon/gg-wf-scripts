@@ -23,7 +23,7 @@ function findRecord(el) {
   return null;
 }
 
-export function initActionEngine(context) {
+export function initActionEngine(context, { debug = false } = {}) {
   async function handleAction(el) {
     const id = el.getAttribute("gg-action");
     const action = actionRegistry[id];
@@ -36,13 +36,26 @@ export function initActionEngine(context) {
     const explicit = parseActionData(el);
     const data = record ? { ...record, ...explicit } : explicit;
 
+    if (debug) {
+      console.groupCollapsed(`[gg-action] "${id}"`);
+      console.log("trigger:", el);
+      console.log("data:", data);
+    }
+    const startedAt = debug ? performance.now() : 0;
+
     try {
       const result = await action(context, data);
+      if (debug) {
+        const ms = (performance.now() - startedAt).toFixed(1);
+        console.log(`result (${ms}ms):`, result);
+      }
       if (result?.ok === false) {
         console.warn(`[gg-action] "${id}" failed:`, result.error ?? "unknown error");
       }
     } catch (err) {
       console.error(`[gg-action] "${id}" threw:`, err);
+    } finally {
+      if (debug) console.groupEnd();
     }
   }
 

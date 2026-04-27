@@ -232,6 +232,7 @@ Returns an app instance with `addQuery`, `addAction`, and `start` methods.
 |---|---|---|---|
 | `context` | `object` | No | Arbitrary object passed to every query and action. Put backend clients or anything else your handlers need on it. Defaults to `{}`. |
 | `auth` | `object` | No | Auth adapter (see below). If omitted, `gg-auth`/`gg-role` attrs are never set. |
+| `debug` | `boolean` | No | When `true`, every query and action is logged to the console (trigger/container, data, result, duration). Defaults to `false`. |
 
 ### Auth adapter
 

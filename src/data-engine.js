@@ -41,7 +41,7 @@ function populateFormFields(root, record) {
   });
 }
 
-export function initDataEngine(context) {
+export function initDataEngine(context, { debug = false } = {}) {
   async function runQuery(container) {
     const isList = container.hasAttribute("gg-data-list");
     const isForm = container.hasAttribute("gg-data-form");
@@ -54,8 +54,18 @@ export function initDataEngine(context) {
       return;
     }
 
+    if (debug) {
+      console.groupCollapsed(`[gg-data] "${id}"`);
+      console.log("container:", container);
+    }
+    const startedAt = debug ? performance.now() : 0;
+
     try {
       const result = await query(context);
+      if (debug) {
+        const ms = (performance.now() - startedAt).toFixed(1);
+        console.log(`result (${ms}ms):`, result);
+      }
       if (isList) {
         if (!Array.isArray(result)) {
           console.warn(
@@ -114,6 +124,8 @@ export function initDataEngine(context) {
       }
     } catch (err) {
       console.error(`[gg-data] query "${id}" failed:`, err);
+    } finally {
+      if (debug) console.groupEnd();
     }
   }
 
