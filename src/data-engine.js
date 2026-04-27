@@ -41,7 +41,7 @@ function populateFormFields(root, record) {
   });
 }
 
-export function initDataEngine(sb) {
+export function initDataEngine(context) {
   async function runQuery(container) {
     const isList = container.hasAttribute("gg-data-list");
     const isForm = container.hasAttribute("gg-data-form");
@@ -55,7 +55,7 @@ export function initDataEngine(sb) {
     }
 
     try {
-      const result = await query(sb);
+      const result = await query(context);
       if (isList) {
         if (!Array.isArray(result)) {
           console.warn(

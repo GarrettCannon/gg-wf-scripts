@@ -1,6 +1,6 @@
 # gg-wf-scripts
 
-A declarative attribute engine for Webflow sites backed by Supabase. Add `gg-*` attributes to your markup and the library handles data binding, URL-driven state, dialogs, auth gating, form visibility, and user actions.
+A declarative attribute engine for Webflow sites. Add `gg-*` attributes to your markup and the library handles data binding, URL-driven state, dialogs, auth gating, form visibility, and user actions. Backend-agnostic — bring your own client (Supabase, fetch, anything).
 
 ## Install
 
@@ -14,13 +14,19 @@ Create a site-specific entry file, register your queries and actions, then bundl
 
 ```js
 import { init } from "gg-wf-scripts";
+import { createClient } from "@supabase/supabase-js";
+
+const sb = createClient("https://your-project.supabase.co", "your-publishable-key");
 
 const app = init({
-  supabaseUrl: "https://your-project.supabase.co",
-  supabaseKey: "your-publishable-key",
+  context: { sb },
+  auth: {
+    getUser: async () => (await sb.auth.getUser()).data.user?.id ?? null,
+    onChange: (cb) => sb.auth.onAuthStateChange((_e, session) => cb(session?.user?.id ?? null)),
+  },
 });
 
-app.addQuery("posts_list", async (sb) => {
+app.addQuery("posts_list", async ({ sb }) => {
   const { data } = await sb
     .from("posts")
     .select("*")
@@ -28,7 +34,7 @@ app.addQuery("posts_list", async (sb) => {
   return data ?? [];
 });
 
-app.addAction("delete_post", async (sb, { id }) => {
+app.addAction("delete_post", async ({ sb }, { id }) => {
   const { error } = await sb.from("posts").delete().eq("id", id);
   return error ? { ok: false, error } : { ok: true };
 });
@@ -139,7 +145,7 @@ Setting `?modal=...` opens the dialog. Removing it (or pressing Escape, or click
 
 ### Auth and role gating
 
-Show or hide elements based on Supabase auth state.
+Show or hide elements based on auth state. You provide the auth adapter, so any backend works.
 
 ```html
 <a href="/login" gg-auth="false">Log in</a>
@@ -168,7 +174,7 @@ Hidden elements get `display: none`, `inert`, and `aria-hidden="true"`. Transiti
 
 ### Actions
 
-Run mutations on click. Actions receive the Supabase client and a data object.
+Run mutations on click. Actions receive the context object and a data object.
 
 ```html
 <!-- Simple action, no data needed -->
@@ -191,7 +197,7 @@ When an action is inside a `gg-data` or `gg-data-list` container, it automatical
 Action functions should return `{ ok: true }` or `{ ok: false, error }`:
 
 ```js
-app.addAction("delete_post", async (sb, { id }) => {
+app.addAction("delete_post", async ({ sb }, { id }) => {
   const { error } = await sb.from("posts").delete().eq("id", id);
   return error ? { ok: false, error } : { ok: true };
 });
@@ -205,24 +211,30 @@ Returns an app instance with `addQuery`, `addAction`, and `start` methods.
 
 | Option | Type | Required | Description |
 |---|---|---|---|
-| `supabaseUrl` | `string` | Yes | Your Supabase project URL |
-| `supabaseKey` | `string` | Yes | Your Supabase publishable (anon) key |
-| `auth` | `object` | No | Auth configuration (see below) |
+| `context` | `object` | No | Arbitrary object passed to every query and action. Put backend clients or anything else your handlers need on it. Defaults to `{}`. |
+| `auth` | `object` | No | Auth adapter (see below). If omitted, `gg-auth`/`gg-role` attrs are never set. |
 
-### Auth config
+### Auth adapter
 
 | Option | Type | Description |
 |---|---|---|
-| `auth.roleQuery` | `async (sb, userId) => string \| null` | Returns the user's role string. Called on auth state change. If omitted, `gg-auth` still works but `gg-role` is never set. |
+| `auth.getUser` | `() => string \| null \| Promise<string \| null>` | Returns the current user id, or `null` when signed out. Called once on start. |
+| `auth.onChange` | `(cb: (userId: string \| null) => void) => void` | Subscribe to auth changes. Optional but recommended — without it, `gg-auth` won't update on sign-in/out. |
+| `auth.roleQuery` | `async (context, userId) => string \| null` | Returns the user's role string. Called on every auth change. If omitted, `gg-role` is never set. |
 
-Example:
+Example with Supabase:
 
 ```js
+import { createClient } from "@supabase/supabase-js";
+
+const sb = createClient("...", "...");
+
 const app = init({
-  supabaseUrl: "...",
-  supabaseKey: "...",
+  context: { sb },
   auth: {
-    roleQuery: async (sb, userId) => {
+    getUser: async () => (await sb.auth.getUser()).data.user?.id ?? null,
+    onChange: (cb) => sb.auth.onAuthStateChange((_e, session) => cb(session?.user?.id ?? null)),
+    roleQuery: async ({ sb }, userId) => {
       const { data } = await sb
         .from("user_roles")
         .select("role")
@@ -236,13 +248,13 @@ const app = init({
 
 ### `app.addQuery(id, fn)`
 
-Register a data query. `fn` receives `(sb)` and should return:
+Register a data query. `fn` receives `(context)` and should return:
 - A single object (or `null`) for use with `gg-data` or `gg-data-form`
 - An array for use with `gg-data-list`
 
 ### `app.addAction(id, fn)`
 
-Register an action. `fn` receives `(sb, data)` and should return `{ ok: true }` or `{ ok: false, error }`.
+Register an action. `fn` receives `(context, data)` and should return `{ ok: true }` or `{ ok: false, error }`.
 
 ### `app.start()`
 

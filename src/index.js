@@ -1,4 +1,3 @@
-import { createClient } from "@supabase/supabase-js";
 import { registerQuery } from "./queries.js";
 import { registerAction } from "./actions.js";
 import { setSwitchState, applySwitchState, populateFields } from "./helpers/dom.js";
@@ -17,29 +16,32 @@ export { getPath } from "./helpers/path.js";
 /**
  * Create a gg-scripts app instance.
  *
- * @param {object} options
- * @param {string} options.supabaseUrl - Your Supabase project URL.
- * @param {string} options.supabaseKey - Your Supabase publishable (anon) key.
- * @param {object} [options.auth] - Auth configuration.
- * @param {(sb: SupabaseClient, userId: string) => Promise<string|null>} [options.auth.roleQuery]
+ * @param {object} [options]
+ * @param {object} [options.context] - Arbitrary object passed to every query and action.
+ *   Put backend clients (Supabase, fetch wrappers, etc.) or anything else your queries need on it.
+ * @param {object} [options.auth] - Auth adapter. If omitted, gg-auth/gg-role attrs are never set.
+ * @param {() => (string|null) | Promise<string|null>} options.auth.getUser
+ *   Returns the current user id, or null when signed out.
+ * @param {(cb: (userId: string|null) => void) => void} [options.auth.onChange]
+ *   Subscribe to auth changes. Called with the new user id (or null) whenever it changes.
+ * @param {(context: object, userId: string) => Promise<string|null>} [options.auth.roleQuery]
  *   Returns the user's role string for gg-role gating. If omitted, gg-role is never set.
  * @returns {{ addQuery: function, addAction: function, start: function }}
  */
-export function init({ supabaseUrl, supabaseKey, auth }) {
+export function init({ context = {}, auth } = {}) {
   return {
     addQuery: registerQuery,
     addAction: registerAction,
     start() {
       function run() {
-        const sb = createClient(supabaseUrl, supabaseKey);
-        initAuth(sb, auth?.roleQuery);
+        if (auth) initAuth(context, auth);
         initSwitchEngine();
         initQueryParams();
         initDialog();
         initBridges();
         initFormVisibility();
-        initDataEngine(sb);
-        initActionEngine(sb);
+        initDataEngine(context);
+        initActionEngine(context);
       }
 
       if (document.readyState === "loading") {

@@ -23,7 +23,7 @@ function findRecord(el) {
   return null;
 }
 
-export function initActionEngine(sb) {
+export function initActionEngine(context) {
   async function handleAction(el) {
     const id = el.getAttribute("gg-action");
     const action = actionRegistry[id];
@@ -37,7 +37,7 @@ export function initActionEngine(sb) {
     const data = record ? { ...record, ...explicit } : explicit;
 
     try {
-      const result = await action(sb, data);
+      const result = await action(context, data);
       if (result?.ok === false) {
         console.warn(`[gg-action] "${id}" failed:`, result.error ?? "unknown error");
       }

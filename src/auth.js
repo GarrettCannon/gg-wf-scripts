@@ -1,4 +1,6 @@
-export async function initAuth(sb, roleQuery) {
+export async function initAuth(context, auth) {
+  const { getUser, onChange, roleQuery } = auth;
+
   async function applyAuthAttrs(userId) {
     const body = document.body;
     if (!userId) {
@@ -8,7 +10,7 @@ export async function initAuth(sb, roleQuery) {
     }
     body.setAttribute("gg-auth", "true");
     if (roleQuery) {
-      const role = await roleQuery(sb, userId);
+      const role = await roleQuery(context, userId);
       if (role) {
         body.setAttribute("gg-role", role);
       } else {
@@ -17,12 +19,10 @@ export async function initAuth(sb, roleQuery) {
     }
   }
 
-  const {
-    data: { user },
-  } = await sb.auth.getUser();
-  applyAuthAttrs(user?.id ?? null);
+  const userId = await getUser();
+  applyAuthAttrs(userId ?? null);
 
-  sb.auth.onAuthStateChange((_event, session) => {
-    applyAuthAttrs(session?.user?.id ?? null);
-  });
+  if (onChange) {
+    onChange((userId) => applyAuthAttrs(userId ?? null));
+  }
 }
