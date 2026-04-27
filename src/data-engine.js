@@ -54,14 +54,17 @@ export function initDataEngine(context, { debug = false } = {}) {
       return;
     }
 
+    const params = new URL(window.location).searchParams;
+
     if (debug) {
       console.groupCollapsed(`[gg-data] "${id}"`);
       console.log("container:", container);
+      console.log("params:", Object.fromEntries(params));
     }
     const startedAt = debug ? performance.now() : 0;
 
     try {
-      const result = await query(context);
+      const result = await query(context, params);
       if (debug) {
         const ms = (performance.now() - startedAt).toFixed(1);
         console.log(`result (${ms}ms):`, result);

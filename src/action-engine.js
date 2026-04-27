@@ -35,16 +35,18 @@ export function initActionEngine(context, { debug = false } = {}) {
     const record = findRecord(el);
     const explicit = parseActionData(el);
     const data = record ? { ...record, ...explicit } : explicit;
+    const params = new URL(window.location).searchParams;
 
     if (debug) {
       console.groupCollapsed(`[gg-action] "${id}"`);
       console.log("trigger:", el);
       console.log("data:", data);
+      console.log("params:", Object.fromEntries(params));
     }
     const startedAt = debug ? performance.now() : 0;
 
     try {
-      const result = await action(context, data);
+      const result = await action(context, data, params);
       if (debug) {
         const ms = (performance.now() - startedAt).toFixed(1);
         console.log(`result (${ms}ms):`, result);

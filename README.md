@@ -26,10 +26,12 @@ const app = init({
   },
 });
 
-app.addQuery("posts_list", async ({ sb }) => {
+app.addQuery("posts_list", async ({ sb }, params) => {
+  const q = params.get("q") ?? "";
   const { data } = await sb
     .from("posts")
     .select("*")
+    .ilike("title", `%${q}%`)
     .order("created_at", { ascending: false });
   return data ?? [];
 });
@@ -268,13 +270,13 @@ const app = init({
 
 ### `app.addQuery(id, fn)`
 
-Register a data query. `fn` receives `(context)` and should return:
+Register a data query. `fn` receives `(context, params)` where `params` is a `URLSearchParams` snapshot of the current URL query string. Use `params.get("id")` for single values or `params.getAll("tag")` for multi-value params. Return:
 - A single object (or `null`) for use with `gg-data` or `gg-data-form`
 - An array for use with `gg-data-list`
 
 ### `app.addAction(id, fn)`
 
-Register an action. `fn` receives `(context, data)` and should return `{ ok: true }` or `{ ok: false, error }`.
+Register an action. `fn` receives `(context, data, params)` where `params` is a `URLSearchParams` snapshot of the current URL query string. Return `{ ok: true }` or `{ ok: false, error }`.
 
 ### `app.start()`
 
