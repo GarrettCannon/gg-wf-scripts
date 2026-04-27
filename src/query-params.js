@@ -74,4 +74,64 @@ export function initQueryParams() {
   document.addEventListener("gg:shadow:click", (e) =>
     handleQueryClick(e.detail.target),
   );
+
+  initQueryBindings();
+}
+
+// ---- gg-query-bind: input/textarea/select <-> URL param ----
+
+function syncBindInputFromUrl(el) {
+  const key = el.getAttribute("gg-query-bind");
+  if (!key) return;
+  const value = new URL(window.location).searchParams.get(key) ?? "";
+  if (el.value !== value) el.value = value;
+}
+
+function setupQueryBindInput(el) {
+  const key = el.getAttribute("gg-query-bind");
+  if (!key) return;
+  const debounceMs = parseInt(el.getAttribute("gg-query-debounce") ?? "0", 10) || 0;
+
+  syncBindInputFromUrl(el);
+
+  let timer;
+  let suppress = false;
+  el.addEventListener("input", () => {
+    if (suppress) return;
+    clearTimeout(timer);
+    const fire = () => {
+      const value = el.value;
+      if (value === "") {
+        removeQueryParams([key]);
+      } else {
+        setQueryParams([{ key, value }]);
+      }
+    };
+    if (debounceMs > 0) {
+      timer = setTimeout(fire, debounceMs);
+    } else {
+      fire();
+    }
+  });
+
+  // When the URL changes from elsewhere (back button, programmatic), mirror
+  // it into the input without re-firing the input listener.
+  onQueryChanged((changedKey, value) => {
+    if (changedKey !== key) return;
+    const next = value ?? "";
+    if (el.value === next) return;
+    suppress = true;
+    el.value = next;
+    suppress = false;
+  });
+}
+
+function initQueryBindings() {
+  document.querySelectorAll("[gg-query-bind]").forEach(setupQueryBindInput);
+
+  // Back/forward navigation doesn't fire pushState notifications, so
+  // re-sync all bound inputs from the URL on popstate.
+  window.addEventListener("popstate", () => {
+    document.querySelectorAll("[gg-query-bind]").forEach(syncBindInputFromUrl);
+  });
 }
