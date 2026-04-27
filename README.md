@@ -86,6 +86,25 @@ Display data from your queries in the DOM.
 
 `gg-field` supports dot-paths for nested data (e.g. `author.name`).
 
+#### Passing data to web components / React
+
+For elements that manage their own DOM (custom elements wrapping React, Lit, etc.), use `gg-data-key` to receive a JSON-serialized value as a `gg-data-value` attribute. The component listens for attribute changes and updates its own state.
+
+```html
+<div gg-data="post_form">
+  <!-- record.schools is e.g. [{ id, name }, ...] -->
+  <my-select gg-data-key="schools"></my-select>
+</div>
+```
+
+After the query runs, the engine resolves the dot-path against the record and writes the result:
+
+```html
+<my-select gg-data-key="schools" gg-data-value='[{"id":1,"name":"Acme"}]'></my-select>
+```
+
+The lookup pierces shadow roots, so the marker can live inside a component's shadow DOM. Leaving `gg-data-key=""` passes the entire record. Note: if the component renders after the query runs, it won't be found — re-run the query (e.g. via `gg-data-on`) once the component has mounted, or have the component pull from `host.__ggRecord` on connect.
+
 #### Re-running on URL changes
 
 Add `gg-data-on` to re-run a query when specific URL params change:

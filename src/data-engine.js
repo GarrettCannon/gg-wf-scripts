@@ -17,6 +17,23 @@ function applySwitchFields(root, record) {
   });
 }
 
+function queryDeep(root, selector) {
+  const results = [...root.querySelectorAll(selector)];
+  root.querySelectorAll("*").forEach((el) => {
+    if (el.shadowRoot) results.push(...queryDeep(el.shadowRoot, selector));
+  });
+  return results;
+}
+
+function applyDataValues(root, record) {
+  queryDeep(root, "[gg-data-key]").forEach((el) => {
+    const path = el.getAttribute("gg-data-key");
+    const value = path ? getPath(record, path) : record;
+    if (value === undefined) return;
+    el.setAttribute("gg-data-value", JSON.stringify(value));
+  });
+}
+
 function populateFormFields(root, record) {
   root.querySelectorAll(
     "input[name], select[name], textarea[name]",
@@ -97,6 +114,7 @@ export function initDataEngine(context, { debug = false } = {}) {
         clone.__ggRecord = record;
         populateFields(clone, record);
         applySwitchFields(clone, record);
+        applyDataValues(clone, record);
         container.appendChild(clone);
       });
     } else if (isForm) {
@@ -109,6 +127,7 @@ export function initDataEngine(context, { debug = false } = {}) {
       if (!result) return;
       container.__ggRecord = result;
       populateFormFields(container, result);
+      applyDataValues(container, result);
     } else {
       if (Array.isArray(result)) {
         console.warn(
@@ -120,6 +139,7 @@ export function initDataEngine(context, { debug = false } = {}) {
       container.__ggRecord = result;
       populateFields(container, result);
       applySwitchFields(container, result);
+      applyDataValues(container, result);
     }
   }
 
