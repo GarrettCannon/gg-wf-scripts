@@ -4,8 +4,9 @@ import {
   setSwitchState,
   applySwitchState,
 } from "./helpers/dom.js";
+import { withDebugLog } from "./helpers/log.js";
 import { queryRegistry } from "./queries.js";
-import { onQueryChanged } from "./query-params.js";
+import { onQueryChanged, getParams } from "./query-params.js";
 
 function applySwitchFields(root, record) {
   root.querySelectorAll("[gg-switch-field]").forEach((el) => {
@@ -54,81 +55,71 @@ export function initDataEngine(context, { debug = false } = {}) {
       return;
     }
 
-    const params = new URL(window.location).searchParams;
+    const params = getParams();
+    const result = await withDebugLog(
+      "[gg-data]",
+      id,
+      { container, params: Object.fromEntries(params) },
+      debug,
+      () => query(context, params),
+    );
+    if (result === undefined) return;
 
-    if (debug) {
-      console.groupCollapsed(`[gg-data] "${id}"`);
-      console.log("container:", container);
-      console.log("params:", Object.fromEntries(params));
-    }
-    const startedAt = debug ? performance.now() : 0;
-
-    try {
-      const result = await query(context, params);
-      if (debug) {
-        const ms = (performance.now() - startedAt).toFixed(1);
-        console.log(`result (${ms}ms):`, result);
+    if (isList) {
+      if (!Array.isArray(result)) {
+        console.warn(
+          `[gg-data-list] query "${id}" did not return an array`,
+        );
+        return;
       }
-      if (isList) {
-        if (!Array.isArray(result)) {
-          console.warn(
-            `[gg-data-list] query "${id}" did not return an array`,
-          );
-          return;
-        }
 
-        const template = container.querySelector("[gg-list-template]");
-        if (!template) {
-          console.warn(
-            `[gg-data-list] no [gg-list-template] inside "${id}"`,
-          );
-          return;
-        }
-
-        Array.from(container.children).forEach((child) => {
-          if (child !== template) child.remove();
-        });
-
-        result.forEach((record) => {
-          const clone = template.cloneNode(true);
-          clone.removeAttribute("gg-list-template");
-          clone.setAttribute(
-            "gg-query-set",
-            `modal:view,id:${record.id}`,
-          );
-          clone.style.display = "flex";
-          if (record?.id != null) clone.id = String(record.id);
-          clone.__ggRecord = record;
-          populateFields(clone, record);
-          applySwitchFields(clone, record);
-          container.appendChild(clone);
-        });
-      } else if (isForm) {
-        if (Array.isArray(result)) {
-          console.warn(
-            `[gg-data-form] query "${id}" returned an array; expected a single record`,
-          );
-          return;
-        }
-        if (!result) return;
-        container.__ggRecord = result;
-        populateFormFields(container, result);
-      } else {
-        if (Array.isArray(result)) {
-          console.warn(
-            `[gg-data] query "${id}" returned an array; use gg-data-list instead`,
-          );
-          return;
-        }
-        if (!result) return;
-        container.__ggRecord = result;
-        populateFields(container, result);
-        applySwitchFields(container, result);
+      const template = container.querySelector("[gg-list-template]");
+      if (!template) {
+        console.warn(
+          `[gg-data-list] no [gg-list-template] inside "${id}"`,
+        );
+        return;
       }
-    } catch (err) {
-      console.error(`[gg-data] query "${id}" failed:`, err);
-    } finally {
-      if (debug) console.groupEnd();
+
+      Array.from(container.children).forEach((child) => {
+        if (child !== template) child.remove();
+      });
+
+      result.forEach((record) => {
+        const clone = template.cloneNode(true);
+        clone.removeAttribute("gg-list-template");
+        clone.setAttribute(
+          "gg-query-set",
+          `modal:view,id:${record.id}`,
+        );
+        clone.style.display = "flex";
+        if (record?.id != null) clone.id = String(record.id);
+        clone.__ggRecord = record;
+        populateFields(clone, record);
+        applySwitchFields(clone, record);
+        container.appendChild(clone);
+      });
+    } else if (isForm) {
+      if (Array.isArray(result)) {
+        console.warn(
+          `[gg-data-form] query "${id}" returned an array; expected a single record`,
+        );
+        return;
+      }
+      if (!result) return;
+      container.__ggRecord = result;
+      populateFormFields(container, result);
+    } else {
+      if (Array.isArray(result)) {
+        console.warn(
+          `[gg-data] query "${id}" returned an array; use gg-data-list instead`,
+        );
+        return;
+      }
+      if (!result) return;
+      container.__ggRecord = result;
+      populateFields(container, result);
+      applySwitchFields(container, result);
     }
   }
 

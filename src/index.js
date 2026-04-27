@@ -1,5 +1,6 @@
 import { registerQuery } from "./queries.js";
 import { registerAction } from "./actions.js";
+import { registerFormAction } from "./form-actions.js";
 import { setSwitchState, applySwitchState, populateFields } from "./helpers/dom.js";
 import { setQueryParams, removeQueryParams, initQueryParams } from "./query-params.js";
 import { initAuth } from "./auth.js";
@@ -9,6 +10,7 @@ import { initBridges } from "./bridges.js";
 import { initFormVisibility } from "./form-visibility.js";
 import { initDataEngine } from "./data-engine.js";
 import { initActionEngine } from "./action-engine.js";
+import { initFormActionEngine } from "./form-action-engine.js";
 
 export { setSwitchState, applySwitchState, populateFields, setQueryParams, removeQueryParams };
 export { getPath } from "./helpers/path.js";
@@ -34,6 +36,7 @@ export function init({ context = {}, auth, debug = false } = {}) {
   return {
     addQuery: registerQuery,
     addAction: registerAction,
+    addFormAction: registerFormAction,
     start() {
       function run() {
         if (auth) initAuth(context, auth);
@@ -44,6 +47,7 @@ export function init({ context = {}, auth, debug = false } = {}) {
         initFormVisibility();
         initDataEngine(context, { debug });
         initActionEngine(context, { debug });
+        initFormActionEngine(context, { debug });
       }
 
       if (document.readyState === "loading") {

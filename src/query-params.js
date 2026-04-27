@@ -1,5 +1,12 @@
 const subscribers = [];
 
+/**
+ * Snapshot of the current URL query string as a URLSearchParams instance.
+ */
+export function getParams() {
+  return new URL(window.location).searchParams;
+}
+
 export function onQueryChanged(callback) {
   subscribers.push(callback);
   return () => {

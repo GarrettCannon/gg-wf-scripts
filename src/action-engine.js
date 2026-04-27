@@ -1,4 +1,6 @@
 import { actionRegistry } from "./actions.js";
+import { withDebugLog } from "./helpers/log.js";
+import { getParams } from "./query-params.js";
 
 function parseActionData(el) {
   const attr = el.getAttribute("gg-action-data");
@@ -35,29 +37,18 @@ export function initActionEngine(context, { debug = false } = {}) {
     const record = findRecord(el);
     const explicit = parseActionData(el);
     const data = record ? { ...record, ...explicit } : explicit;
-    const params = new URL(window.location).searchParams;
+    const params = getParams();
 
-    if (debug) {
-      console.groupCollapsed(`[gg-action] "${id}"`);
-      console.log("trigger:", el);
-      console.log("data:", data);
-      console.log("params:", Object.fromEntries(params));
-    }
-    const startedAt = debug ? performance.now() : 0;
+    const result = await withDebugLog(
+      "[gg-action]",
+      id,
+      { trigger: el, data, params: Object.fromEntries(params) },
+      debug,
+      () => action(context, data, params),
+    );
 
-    try {
-      const result = await action(context, data, params);
-      if (debug) {
-        const ms = (performance.now() - startedAt).toFixed(1);
-        console.log(`result (${ms}ms):`, result);
-      }
-      if (result?.ok === false) {
-        console.warn(`[gg-action] "${id}" failed:`, result.error ?? "unknown error");
-      }
-    } catch (err) {
-      console.error(`[gg-action] "${id}" threw:`, err);
-    } finally {
-      if (debug) console.groupEnd();
+    if (result?.ok === false) {
+      console.warn(`[gg-action] "${id}" failed:`, result.error ?? "unknown error");
     }
   }
 
