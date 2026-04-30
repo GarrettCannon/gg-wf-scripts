@@ -4,7 +4,8 @@ import {
   setSwitchState,
   applySwitchState,
 } from "./helpers/dom.js";
-import { withDebugLog } from "./helpers/log.js";
+import { runHandler } from "./helpers/run-handler.js";
+import { runWithLoading } from "./helpers/run-with-loading.js";
 import { queryRegistry } from "./queries.js";
 import { onQueryChanged, getParams } from "./query-params.js";
 
@@ -73,13 +74,19 @@ export function initDataEngine(context, { debug = false } = {}) {
     }
 
     const params = getParams();
-    const result = await withDebugLog(
-      "[gg-data]",
-      id,
-      { container, params: Object.fromEntries(params) },
-      debug,
-      () => query(context, params),
+    const handlerResult = await runWithLoading([container], () =>
+      runHandler(
+        {
+          prefix: "[gg-data]",
+          id,
+          fields: { container, params: Object.fromEntries(params) },
+          debug,
+        },
+        () => query(context, params),
+      ),
     );
+    if (!handlerResult.ok) return;
+    const result = handlerResult.value;
     if (result === undefined) return;
 
     if (isList) {

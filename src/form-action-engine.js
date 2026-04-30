@@ -1,6 +1,7 @@
 import { formActionRegistry } from "./form-actions.js";
 import { populateFields } from "./helpers/dom.js";
-import { withDebugLog } from "./helpers/log.js";
+import { runHandler } from "./helpers/run-handler.js";
+import { runWithLoading } from "./helpers/run-with-loading.js";
 import { getParams } from "./query-params.js";
 
 function findInputs(form, name) {
@@ -105,23 +106,39 @@ export function initFormActionEngine(context, { debug = false } = {}) {
     }
 
     event.preventDefault();
+    if (form.hasAttribute("gg-loading")) return;
+
     clearFormErrors(form);
 
     const formData = new FormData(form);
     const params = getParams();
 
-    const result = await withDebugLog(
-      "[gg-form-action]",
-      id,
-      {
-        form,
-        formData: Object.fromEntries(formData),
-        params: Object.fromEntries(params),
-      },
-      debug,
-      () => action(context, formData, params),
+    const submitControls = form.querySelectorAll(
+      'button[type="submit"], button:not([type]), input[type="submit"]',
     );
 
+    const handlerResult = await runWithLoading([form, ...submitControls], () =>
+      runHandler(
+        {
+          prefix: "[gg-form-action]",
+          id,
+          fields: {
+            form,
+            formData: Object.fromEntries(formData),
+            params: Object.fromEntries(params),
+          },
+          debug,
+        },
+        () => action(context, formData, params),
+      ),
+    );
+
+    if (!handlerResult.ok) {
+      applyFormError(form, "Something went wrong. Please try again.");
+      return;
+    }
+
+    const result = handlerResult.value;
     if (result?.ok === false) {
       const fieldErrors = Array.isArray(result.field_errors)
         ? result.field_errors

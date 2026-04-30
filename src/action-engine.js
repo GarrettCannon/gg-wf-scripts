@@ -1,5 +1,6 @@
 import { actionRegistry } from "./actions.js";
-import { withDebugLog } from "./helpers/log.js";
+import { runHandler } from "./helpers/run-handler.js";
+import { runWithLoading } from "./helpers/run-with-loading.js";
 import { getParams } from "./query-params.js";
 
 function parseActionData(el) {
@@ -27,6 +28,8 @@ function findRecord(el) {
 
 export function initActionEngine(context, { debug = false } = {}) {
   async function handleAction(el) {
+    if (el.hasAttribute("gg-loading")) return;
+
     const id = el.getAttribute("gg-action");
     const action = actionRegistry[id];
     if (!action) {
@@ -39,16 +42,24 @@ export function initActionEngine(context, { debug = false } = {}) {
     const data = record ? { ...record, ...explicit } : explicit;
     const params = getParams();
 
-    const result = await withDebugLog(
-      "[gg-action]",
-      id,
-      { trigger: el, data, params: Object.fromEntries(params) },
-      debug,
-      () => action(context, data, params),
+    const result = await runWithLoading([el], () =>
+      runHandler(
+        {
+          prefix: "[gg-action]",
+          id,
+          fields: { trigger: el, data, params: Object.fromEntries(params) },
+          debug,
+        },
+        () => action(context, data, params),
+      ),
     );
 
-    if (result?.ok === false) {
-      console.warn(`[gg-action] "${id}" failed:`, result.error ?? "unknown error");
+    if (!result.ok) return;
+    if (result.value?.ok === false) {
+      console.warn(
+        `[gg-action] "${id}" failed:`,
+        result.value.error ?? "unknown error",
+      );
     }
   }
 
