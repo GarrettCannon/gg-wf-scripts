@@ -9,24 +9,27 @@ import { runWithLoading } from "./helpers/run-with-loading.js";
 import { queryRegistry } from "./queries.js";
 import { onQueryChanged, getParams } from "./query-params.js";
 
-function applySwitchFields(root, record) {
+type DataRecord = Record<string, unknown>;
+
+function applySwitchFields(root: Element, record: DataRecord): void {
   root.querySelectorAll("[gg-switch-field]").forEach((el) => {
     const path = el.getAttribute("gg-switch-field");
+    if (!path) return;
     const value = getPath(record, path);
     setSwitchState(el, value);
     applySwitchState(el);
   });
 }
 
-function queryDeep(root, selector) {
-  const results = [...root.querySelectorAll(selector)];
+function queryDeep(root: ParentNode, selector: string): Element[] {
+  const results: Element[] = [...root.querySelectorAll(selector)];
   root.querySelectorAll("*").forEach((el) => {
     if (el.shadowRoot) results.push(...queryDeep(el.shadowRoot, selector));
   });
   return results;
 }
 
-function applyDataValues(root, record) {
+function applyDataValues(root: ParentNode, record: DataRecord): void {
   queryDeep(root, "[gg-data-key]").forEach((el) => {
     const path = el.getAttribute("gg-data-key");
     const value = path ? getPath(record, path) : record;
@@ -35,38 +38,45 @@ function applyDataValues(root, record) {
   });
 }
 
-function populateFormFields(root, record) {
-  root.querySelectorAll(
-    "input[name], select[name], textarea[name]",
-  ).forEach((el) => {
-    const name = el.getAttribute("name");
-    const value = getPath(record, name);
-    if (value == null) return;
+function populateFormFields(root: Element, record: DataRecord): void {
+  root
+    .querySelectorAll<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>(
+      "input[name], select[name], textarea[name]",
+    )
+    .forEach((el) => {
+      const name = el.getAttribute("name");
+      if (!name) return;
+      const value = getPath(record, name);
+      if (value == null) return;
 
-    if (el instanceof HTMLInputElement) {
-      if (el.type === "checkbox") {
-        el.checked = Boolean(value);
-      } else if (el.type === "radio") {
-        el.checked = String(el.value) === String(value);
+      if (el instanceof HTMLInputElement) {
+        if (el.type === "checkbox") {
+          el.checked = Boolean(value);
+        } else if (el.type === "radio") {
+          el.checked = String(el.value) === String(value);
+        } else {
+          el.value = String(value);
+        }
       } else {
         el.value = String(value);
       }
-    } else {
-      el.value = String(value);
-    }
 
-    el.dispatchEvent(new Event("input", { bubbles: true }));
-    el.dispatchEvent(new Event("change", { bubbles: true }));
-  });
+      el.dispatchEvent(new Event("input", { bubbles: true }));
+      el.dispatchEvent(new Event("change", { bubbles: true }));
+    });
 }
 
-export function initDataEngine(context, { debug = false } = {}) {
-  async function runQuery(container) {
+export function initDataEngine(
+  context: unknown,
+  { debug = false }: { debug?: boolean } = {},
+): void {
+  async function runQuery(container: Element): Promise<void> {
     const isList = container.hasAttribute("gg-data-list");
     const isForm = container.hasAttribute("gg-data-form");
     const id = container.getAttribute(
       isList ? "gg-data-list" : isForm ? "gg-data-form" : "gg-data",
     );
+    if (!id) return;
     const query = queryRegistry[id];
     if (!query) {
       console.warn(`[gg-data] no query registered for "${id}"`);
@@ -109,8 +119,8 @@ export function initDataEngine(context, { debug = false } = {}) {
         if (child !== template) child.remove();
       });
 
-      result.forEach((record) => {
-        const clone = template.cloneNode(true);
+      result.forEach((record: DataRecord) => {
+        const clone = template.cloneNode(true) as HTMLElement;
         clone.removeAttribute("gg-list-template");
         clone.setAttribute(
           "gg-query-set",
@@ -132,9 +142,10 @@ export function initDataEngine(context, { debug = false } = {}) {
         return;
       }
       if (!result) return;
-      container.__ggRecord = result;
-      populateFormFields(container, result);
-      applyDataValues(container, result);
+      const record = result as DataRecord;
+      container.__ggRecord = record;
+      populateFormFields(container, record);
+      applyDataValues(container, record);
     } else {
       if (Array.isArray(result)) {
         console.warn(
@@ -143,10 +154,11 @@ export function initDataEngine(context, { debug = false } = {}) {
         return;
       }
       if (!result) return;
-      container.__ggRecord = result;
-      populateFields(container, result);
-      applySwitchFields(container, result);
-      applyDataValues(container, result);
+      const record = result as DataRecord;
+      container.__ggRecord = record;
+      populateFields(container, record);
+      applySwitchFields(container, record);
+      applyDataValues(container, record);
     }
   }
 
@@ -162,10 +174,9 @@ export function initDataEngine(context, { debug = false } = {}) {
         "[gg-data][gg-data-on], [gg-data-list][gg-data-on], [gg-data-form][gg-data-on]",
       )
       .forEach((c) => {
-        const keys = c
-          .getAttribute("gg-data-on")
-          .split(",")
-          .map((s) => s.trim());
+        const attr = c.getAttribute("gg-data-on");
+        if (!attr) return;
+        const keys = attr.split(",").map((s) => s.trim());
         if (keys.includes(key)) runQuery(c);
       });
   });

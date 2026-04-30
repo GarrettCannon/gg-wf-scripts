@@ -2,13 +2,11 @@
  * Set gg-loading="true" on each element while fn runs, clearing it (in a
  * finally block) when fn resolves or throws. Form controls (button, input)
  * also get native `disabled` toggled.
- *
- * @param {Iterable<Element>} elements - Elements to mark as loading.
- * @param {() => Promise<T>} fn - The work to run.
- * @returns {Promise<T>}
- * @template T
  */
-export async function runWithLoading(elements, fn) {
+export async function runWithLoading<T>(
+  elements: Iterable<Element>,
+  fn: () => Promise<T> | T,
+): Promise<T> {
   const targets = [...elements];
   targets.forEach(applyLoading);
   try {
@@ -18,14 +16,14 @@ export async function runWithLoading(elements, fn) {
   }
 }
 
-function applyLoading(el) {
+function applyLoading(el: Element): void {
   el.setAttribute("gg-loading", "true");
   if (el instanceof HTMLButtonElement || el instanceof HTMLInputElement) {
     el.disabled = true;
   }
 }
 
-function clearLoading(el) {
+function clearLoading(el: Element): void {
   el.removeAttribute("gg-loading");
   if (el instanceof HTMLButtonElement || el instanceof HTMLInputElement) {
     el.disabled = false;

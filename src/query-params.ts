@@ -1,13 +1,15 @@
-const subscribers = [];
+type QueryChangeCallback = (key: string, value: string | null) => void;
+
+const subscribers: QueryChangeCallback[] = [];
 
 /**
  * Snapshot of the current URL query string as a URLSearchParams instance.
  */
-export function getParams() {
-  return new URL(window.location).searchParams;
+export function getParams(): URLSearchParams {
+  return new URL(window.location.href).searchParams;
 }
 
-export function onQueryChanged(callback) {
+export function onQueryChanged(callback: QueryChangeCallback): () => void {
   subscribers.push(callback);
   return () => {
     const idx = subscribers.indexOf(callback);
@@ -15,17 +17,17 @@ export function onQueryChanged(callback) {
   };
 }
 
-function notify(key, value) {
+function notify(key: string, value: string | null): void {
   subscribers.forEach((cb) => cb(key, value));
 }
 
 /**
  * Set one or more URL query params and notify subscribers.
- *
- * @param {Array<{key: string, value: string}>} params - Key/value pairs to set.
  */
-export function setQueryParams(params) {
-  const url = new URL(window.location);
+export function setQueryParams(
+  params: Array<{ key: string; value: string }>,
+): void {
+  const url = new URL(window.location.href);
   params.forEach(({ key, value }) => url.searchParams.set(key, value));
   history.pushState({}, "", url);
   params.forEach(({ key, value }) => notify(key, value));
@@ -33,11 +35,9 @@ export function setQueryParams(params) {
 
 /**
  * Remove one or more URL query params and notify subscribers.
- *
- * @param {string[]} keys - Param keys to remove.
  */
-export function removeQueryParams(keys) {
-  const url = new URL(window.location);
+export function removeQueryParams(keys: string[]): void {
+  const url = new URL(window.location.href);
   keys.forEach((key) => url.searchParams.delete(key));
   history.pushState({}, "", url);
   keys.forEach((key) => notify(key, null));
@@ -45,16 +45,17 @@ export function removeQueryParams(keys) {
 
 // ---- click delegation for gg-query-set / gg-query-remove ----
 
-function handleQueryClick(target) {
+function handleQueryClick(target: Element | null): void {
+  if (!target) return;
   const setTrigger = target.closest("[gg-query-set]");
   if (setTrigger) {
-    const params = setTrigger
-      .getAttribute("gg-query-set")
+    const attr = setTrigger.getAttribute("gg-query-set") ?? "";
+    const params = attr
       .split(",")
       .filter(Boolean)
       .map((pair) => {
         const [key, value] = pair.split(":");
-        return { key: key?.trim(), value: value?.trim() };
+        return { key: key?.trim() ?? "", value: value?.trim() ?? "" };
       })
       .filter((p) => p.key && p.value);
     if (params.length) setQueryParams(params);
@@ -63,8 +64,8 @@ function handleQueryClick(target) {
 
   const removeTrigger = target.closest("[gg-query-remove]");
   if (removeTrigger) {
-    const keys = removeTrigger
-      .getAttribute("gg-query-remove")
+    const attr = removeTrigger.getAttribute("gg-query-remove") ?? "";
+    const keys = attr
       .split(",")
       .map((k) => k.trim())
       .filter(Boolean);
@@ -73,39 +74,45 @@ function handleQueryClick(target) {
   }
 }
 
-export function initQueryParams() {
-  document.addEventListener("click", (e) => handleQueryClick(e.target));
+export function initQueryParams(): void {
+  document.addEventListener("click", (e) => {
+    handleQueryClick(e.target instanceof Element ? e.target : null);
+  });
 
   // Shadow-root click forwarder — shadow DOM swallows bubbling, so anything
   // inside a shadow tree dispatches `gg:shadow:click` with the real target.
-  document.addEventListener("gg:shadow:click", (e) =>
-    handleQueryClick(e.detail.target),
-  );
+  document.addEventListener("gg:shadow:click", (e) => {
+    const detail = (e as CustomEvent<{ target: Element }>).detail;
+    handleQueryClick(detail?.target ?? null);
+  });
 
   initQueryBindings();
 }
 
 // ---- gg-query-bind: input/textarea/select <-> URL param ----
 
-function syncBindInputFromUrl(el) {
+type BindableInput = HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement;
+
+function syncBindInputFromUrl(el: BindableInput): void {
   const key = el.getAttribute("gg-query-bind");
   if (!key) return;
-  const value = new URL(window.location).searchParams.get(key) ?? "";
+  const value = new URL(window.location.href).searchParams.get(key) ?? "";
   if (el.value !== value) el.value = value;
 }
 
-function setupQueryBindInput(el) {
+function setupQueryBindInput(el: BindableInput): void {
   const key = el.getAttribute("gg-query-bind");
   if (!key) return;
-  const debounceMs = parseInt(el.getAttribute("gg-query-debounce") ?? "0", 10) || 0;
+  const debounceMs =
+    parseInt(el.getAttribute("gg-query-debounce") ?? "0", 10) || 0;
 
   syncBindInputFromUrl(el);
 
-  let timer;
+  let timer: ReturnType<typeof setTimeout> | undefined;
   let suppress = false;
   el.addEventListener("input", () => {
     if (suppress) return;
-    clearTimeout(timer);
+    if (timer !== undefined) clearTimeout(timer);
     const fire = () => {
       const value = el.value;
       if (value === "") {
@@ -133,12 +140,16 @@ function setupQueryBindInput(el) {
   });
 }
 
-function initQueryBindings() {
-  document.querySelectorAll("[gg-query-bind]").forEach(setupQueryBindInput);
+function initQueryBindings(): void {
+  document
+    .querySelectorAll<BindableInput>("[gg-query-bind]")
+    .forEach(setupQueryBindInput);
 
   // Back/forward navigation doesn't fire pushState notifications, so
   // re-sync all bound inputs from the URL on popstate.
   window.addEventListener("popstate", () => {
-    document.querySelectorAll("[gg-query-bind]").forEach(syncBindInputFromUrl);
+    document
+      .querySelectorAll<BindableInput>("[gg-query-bind]")
+      .forEach(syncBindInputFromUrl);
   });
 }

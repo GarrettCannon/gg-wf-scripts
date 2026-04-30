@@ -1,7 +1,19 @@
-export async function initAuth(context, auth) {
+export type AuthAdapter = {
+  getUser: () => string | null | Promise<string | null>;
+  onChange?: (cb: (userId: string | null) => void) => void;
+  roleQuery?: (
+    context: unknown,
+    userId: string,
+  ) => Promise<string | null> | string | null;
+};
+
+export async function initAuth(
+  context: unknown,
+  auth: AuthAdapter,
+): Promise<void> {
   const { getUser, onChange, roleQuery } = auth;
 
-  async function applyAuthAttrs(userId) {
+  async function applyAuthAttrs(userId: string | null): Promise<void> {
     const body = document.body;
     if (!userId) {
       body.setAttribute("gg-auth", "false");

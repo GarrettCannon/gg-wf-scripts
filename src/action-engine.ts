@@ -3,10 +3,12 @@ import { runHandler } from "./helpers/run-handler.js";
 import { runWithLoading } from "./helpers/run-with-loading.js";
 import { getParams } from "./query-params.js";
 
-function parseActionData(el) {
+type ActionData = Record<string, unknown>;
+
+function parseActionData(el: Element): ActionData {
   const attr = el.getAttribute("gg-action-data");
   if (!attr) return {};
-  const data = {};
+  const data: ActionData = {};
   attr
     .split(",")
     .filter(Boolean)
@@ -17,8 +19,8 @@ function parseActionData(el) {
   return data;
 }
 
-function findRecord(el) {
-  let node = el.parentElement;
+function findRecord(el: Element): ActionData | null {
+  let node: Element | null = el.parentElement;
   while (node) {
     if (node.__ggRecord) return node.__ggRecord;
     node = node.parentElement;
@@ -26,11 +28,15 @@ function findRecord(el) {
   return null;
 }
 
-export function initActionEngine(context, { debug = false } = {}) {
-  async function handleAction(el) {
+export function initActionEngine(
+  context: unknown,
+  { debug = false }: { debug?: boolean } = {},
+): void {
+  async function handleAction(el: Element): Promise<void> {
     if (el.hasAttribute("gg-loading")) return;
 
     const id = el.getAttribute("gg-action");
+    if (!id) return;
     const action = actionRegistry[id];
     if (!action) {
       console.warn(`[gg-action] no action registered for "${id}"`);
@@ -60,21 +66,25 @@ export function initActionEngine(context, { debug = false } = {}) {
     );
 
     if (!result.ok) return;
-    if (result.value?.ok === false) {
+    if (result.value && (result.value as { ok?: boolean }).ok === false) {
+      const failure = result.value as { error?: unknown };
       console.warn(
         `[gg-action] "${id}" failed:`,
-        result.value.error ?? "unknown error",
+        failure.error ?? "unknown error",
       );
     }
   }
 
   document.addEventListener("click", (e) => {
-    const trigger = e.target.closest("[gg-action]");
+    const target = e.target;
+    if (!(target instanceof Element)) return;
+    const trigger = target.closest("[gg-action]");
     if (trigger) handleAction(trigger);
   });
 
   document.addEventListener("gg:shadow:click", (e) => {
-    const trigger = e.detail.target.closest("[gg-action]");
+    const detail = (e as CustomEvent<{ target: Element }>).detail;
+    const trigger = detail?.target?.closest?.("[gg-action]");
     if (trigger) handleAction(trigger);
   });
 }

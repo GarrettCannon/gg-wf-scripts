@@ -1,10 +1,10 @@
 import { applySwitchState } from "./helpers/dom.js";
 
-export function initSwitchEngine() {
+export function initSwitchEngine(): void {
   // Re-apply whenever gg-switch-state changes on any element.
   new MutationObserver((mutations) => {
     mutations.forEach((m) => {
-      if (m.attributeName === "gg-switch-state") {
+      if (m.attributeName === "gg-switch-state" && m.target instanceof Element) {
         applySwitchState(m.target);
       }
     });

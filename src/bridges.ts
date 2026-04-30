@@ -1,7 +1,7 @@
 import { setSwitchState } from "./helpers/dom.js";
 import { onQueryChanged } from "./query-params.js";
 
-export function initBridges() {
+export function initBridges(): void {
   // ---- gg-switch-query: URL params → gg-switch-state ----
   // On any URL param change, mirror its value onto matching
   // [gg-switch-query="<key>"] elements' gg-switch-state.
@@ -16,6 +16,7 @@ export function initBridges() {
   const params = new URLSearchParams(window.location.search);
   document.querySelectorAll("[gg-switch-query]").forEach((el) => {
     const key = el.getAttribute("gg-switch-query");
+    if (!key) return;
     setSwitchState(el, params.get(key));
   });
 
@@ -24,7 +25,8 @@ export function initBridges() {
     Webflow.push(() => {
       const wfIx = Webflow.require("ix3");
       document.addEventListener("webflow:emit", (e) => {
-        wfIx.emit(e.detail.event);
+        const detail = (e as CustomEvent<{ event: string }>).detail;
+        if (detail?.event) wfIx.emit(detail.event);
       });
     });
   });

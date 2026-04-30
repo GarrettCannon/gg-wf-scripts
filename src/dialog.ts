@@ -1,14 +1,14 @@
 import { removeQueryParams, onQueryChanged } from "./query-params.js";
 
-function stopLenis() {
+function stopLenis(): void {
   if (typeof lenis !== "undefined") lenis.stop();
 }
 
-function startLenis() {
+function startLenis(): void {
   if (typeof lenis !== "undefined") lenis.start();
 }
 
-function openDialog() {
+function openDialog(): void {
   const dialog = document.querySelector("dialog");
   if (!dialog) return;
   dialog.removeAttribute("aria-hidden");
@@ -17,7 +17,7 @@ function openDialog() {
   stopLenis();
 }
 
-function closeDialog() {
+function closeDialog(): void {
   const dialog = document.querySelector("dialog");
   if (!dialog) return;
   dialog.setAttribute("aria-hidden", "true");
@@ -26,7 +26,7 @@ function closeDialog() {
   startLenis();
 }
 
-function dismissViaUrlOrDirect() {
+function dismissViaUrlOrDirect(): void {
   const modalParam = new URLSearchParams(window.location.search).get("modal");
   if (modalParam) {
     removeQueryParams(["modal", "id"]);
@@ -35,7 +35,7 @@ function dismissViaUrlOrDirect() {
   }
 }
 
-function syncDialogToUrl() {
+function syncDialogToUrl(): void {
   const modalParam = new URLSearchParams(window.location.search).get("modal");
   if (modalParam) {
     openDialog();
@@ -44,7 +44,7 @@ function syncDialogToUrl() {
   }
 }
 
-export function initDialog() {
+export function initDialog(): void {
   // Subscribe to query param changes — open/close when "modal" changes
   onQueryChanged((key, value) => {
     if (key !== "modal") return;
@@ -61,8 +61,10 @@ export function initDialog() {
 
   // Backdrop click
   document.addEventListener("click", (e) => {
-    if (!e.target.matches("dialog[open]")) return;
-    const rect = e.target.getBoundingClientRect();
+    const target = e.target;
+    if (!(target instanceof HTMLDialogElement)) return;
+    if (!target.matches("dialog[open]")) return;
+    const rect = target.getBoundingClientRect();
     const outside =
       e.clientX < rect.left ||
       e.clientX > rect.right ||
@@ -73,7 +75,8 @@ export function initDialog() {
 
   // Escape key — preempt the default close so the URL stays source of truth
   document.addEventListener("cancel", (e) => {
-    if (!e.target.matches("dialog")) return;
+    const target = e.target;
+    if (!(target instanceof HTMLDialogElement)) return;
     e.preventDefault();
     dismissViaUrlOrDirect();
   });
