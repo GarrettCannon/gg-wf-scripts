@@ -62,10 +62,14 @@ export default defineConfig({
 			{
 				text: "For LLMs",
 				items: [
-					{ text: "llms.txt", link: "/llms.txt", target: "_blank" },
+					{
+						text: "llms.txt",
+						link: "https://garrettcannon.dev/gg-wf-scripts/llms.txt",
+						target: "_blank",
+					},
 					{
 						text: "llms-full.txt",
-						link: "/llms-full.txt",
+						link: "https://garrettcannon.dev/gg-wf-scripts/llms-full.txt",
 						target: "_blank",
 					},
 				],
