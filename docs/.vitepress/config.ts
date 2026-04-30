@@ -5,7 +5,7 @@ export default defineConfig({
 	vite: {
 		plugins: [
 			llmstxt({
-				domain: "https://garrettcannon.github.io",
+				domain: "https://garrettcannon.dev",
 				ignoreFiles: ["index.md"],
 			}),
 		],
@@ -16,7 +16,7 @@ export default defineConfig({
 	base: "/gg-wf-scripts/",
 	cleanUrls: true,
 	lastUpdated: true,
-	sitemap: { hostname: "https://garrettcannon.github.io/gg-wf-scripts/" },
+	sitemap: { hostname: "https://garrettcannon.dev/gg-wf-scripts/" },
 	head: [
 		["link", { rel: "icon", href: "/gg-wf-scripts/favicon.ico" }],
 	],
