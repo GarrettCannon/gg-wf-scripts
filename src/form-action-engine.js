@@ -108,6 +108,11 @@ export function initFormActionEngine(context, { debug = false } = {}) {
     event.preventDefault();
     if (form.hasAttribute("gg-loading")) return;
 
+    if (form.hasAttribute("gg-confirm")) {
+      const text = form.getAttribute("gg-confirm-text") || "Are you sure?";
+      if (!window.confirm(text)) return;
+    }
+
     clearFormErrors(form);
 
     const formData = new FormData(form);

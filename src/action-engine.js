@@ -37,6 +37,11 @@ export function initActionEngine(context, { debug = false } = {}) {
       return;
     }
 
+    if (el.hasAttribute("gg-confirm")) {
+      const text = el.getAttribute("gg-confirm-text") || "Are you sure?";
+      if (!window.confirm(text)) return;
+    }
+
     const record = findRecord(el);
     const explicit = parseActionData(el);
     const data = record ? { ...record, ...explicit } : explicit;

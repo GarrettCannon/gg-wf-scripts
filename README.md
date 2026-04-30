@@ -337,6 +337,20 @@ Style with CSS:
 [gg-loading]::after { content: " ⟳"; }
 ```
 
+### Confirm prompts
+
+Add `gg-confirm` to a `gg-action` trigger or `gg-form-action` form to require a `window.confirm` dialog before the handler runs. If the user cancels, the action is skipped (and form submission is prevented). Customize the prompt text with `gg-confirm-text`; if omitted it defaults to `"Are you sure?"`.
+
+```html
+<button gg-action="delete_post" gg-confirm gg-confirm-text="Delete this post?">
+  Delete
+</button>
+
+<form gg-form-action="wipe_account" gg-confirm gg-confirm-text="This cannot be undone. Continue?">
+  ...
+</form>
+```
+
 ## Config
 
 ### `init(options)`
