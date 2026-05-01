@@ -25,6 +25,7 @@ export default defineConfig({
 			{ text: "Guide", link: "/guide/getting-started" },
 			{ text: "Attributes", link: "/attributes/data" },
 			{ text: "API", link: "/api/init" },
+			{ text: "Quick reference", link: "/quick-reference" },
 			{
 				text: "GitHub",
 				link: "https://github.com/GarrettCannon/gg-wf-scripts",
@@ -36,6 +37,7 @@ export default defineConfig({
 				items: [
 					{ text: "Getting started", link: "/guide/getting-started" },
 					{ text: "Installation", link: "/guide/installation" },
+					{ text: "Quick reference", link: "/quick-reference" },
 				],
 			},
 			{

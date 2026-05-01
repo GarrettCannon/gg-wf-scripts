@@ -1,6 +1,6 @@
 # `init(options)`
 
-Returns an app instance with `addQuery`, `addAction`, `addFormAction`, and `start` methods.
+Returns an app instance with `addQuery`, `addAction`, `addFormAction`, `onError`, `start`, and `dispose` methods.
 
 ```js
 import { init } from "gg-wf-scripts";
@@ -39,4 +39,44 @@ app.addQuery(/* ... */);
 app.addAction(/* ... */);
 app.addFormAction(/* ... */);
 app.start();
+```
+
+Engines also pick up elements inserted **after** `start()` — Webflow IX-driven content, CMS templates, or anything appended at runtime — via a shared `MutationObserver`. You don't need to re-run `start()`.
+
+## `app.onError(handler)`
+
+Subscribe to handler failures. Fires when:
+
+- A registered query, action, or form action throws.
+- The DOM references a handler id that wasn't registered.
+- A handler returns `{ ok: false, error }` (or `{ ok: false, field_errors }` for form actions).
+
+```js
+app.onError(({ prefix, id, error }) => {
+  Sentry.captureException(error, { tags: { handler: `${prefix} ${id}` } });
+});
+```
+
+The handler receives a `GgErrorEvent`:
+
+| Field | Type | Description |
+|---|---|---|
+| `prefix` | `string` | Engine label, e.g. `"[gg-action]"`, `"[gg-data]"`, `"[gg-form-action]"`. |
+| `id` | `string` | Handler id (the value of the `gg-action` / `gg-data` / `gg-form-action` attribute). |
+| `error` | `unknown` | The thrown value, or a string describing the non-throw failure. |
+| `fields` | `object` | Engine-specific context: trigger element, form, params, data. |
+
+Returns an unsubscribe function.
+
+## `app.dispose()`
+
+Detaches every listener and observer the library installed. Call from SPA route changes, HMR teardown, or test cleanup. Handler registrations are kept, so you can call `start()` again on the same app.
+
+```js
+const app = init({ context });
+app.addQuery(/* ... */);
+app.start();
+
+// later, e.g. on route change
+app.dispose();
 ```

@@ -1,3 +1,6 @@
+import { ATTR, SEL } from "./attrs.js";
+import { onElement } from "./dom-observer.js";
+
 type QueryChangeCallback = (key: string, value: string | null) => void;
 
 const subscribers: QueryChangeCallback[] = [];
@@ -47,9 +50,9 @@ export function removeQueryParams(keys: string[]): void {
 
 function handleQueryClick(target: Element | null): void {
   if (!target) return;
-  const setTrigger = target.closest("[gg-query-set]");
+  const setTrigger = target.closest(`[${ATTR.querySet}]`);
   if (setTrigger) {
-    const attr = setTrigger.getAttribute("gg-query-set") ?? "";
+    const attr = setTrigger.getAttribute(ATTR.querySet) ?? "";
     const params = attr
       .split(",")
       .filter(Boolean)
@@ -62,9 +65,9 @@ function handleQueryClick(target: Element | null): void {
     return;
   }
 
-  const removeTrigger = target.closest("[gg-query-remove]");
+  const removeTrigger = target.closest(`[${ATTR.queryRemove}]`);
   if (removeTrigger) {
-    const attr = removeTrigger.getAttribute("gg-query-remove") ?? "";
+    const attr = removeTrigger.getAttribute(ATTR.queryRemove) ?? "";
     const keys = attr
       .split(",")
       .map((k) => k.trim())
@@ -74,19 +77,26 @@ function handleQueryClick(target: Element | null): void {
   }
 }
 
-export function initQueryParams(): void {
-  document.addEventListener("click", (e) => {
+export function initQueryParams(): () => void {
+  const onClick = (e: Event) => {
     handleQueryClick(e.target instanceof Element ? e.target : null);
-  });
+  };
 
-  // Shadow-root click forwarder — shadow DOM swallows bubbling, so anything
-  // inside a shadow tree dispatches `gg:shadow:click` with the real target.
-  document.addEventListener("gg:shadow:click", (e) => {
+  const onShadowClick = (e: Event) => {
     const detail = (e as CustomEvent<{ target: Element }>).detail;
     handleQueryClick(detail?.target ?? null);
-  });
+  };
 
-  initQueryBindings();
+  document.addEventListener("click", onClick);
+  document.addEventListener("gg:shadow:click", onShadowClick);
+
+  const unbindBindings = initQueryBindings();
+
+  return () => {
+    document.removeEventListener("click", onClick);
+    document.removeEventListener("gg:shadow:click", onShadowClick);
+    unbindBindings();
+  };
 }
 
 // ---- gg-query-bind: input/textarea/select <-> URL param ----
@@ -94,17 +104,22 @@ export function initQueryParams(): void {
 type BindableInput = HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement;
 
 function syncBindInputFromUrl(el: BindableInput): void {
-  const key = el.getAttribute("gg-query-bind");
+  const key = el.getAttribute(ATTR.queryBind);
   if (!key) return;
   const value = new URL(window.location.href).searchParams.get(key) ?? "";
   if (el.value !== value) el.value = value;
 }
 
+const boundInputs = new WeakSet<BindableInput>();
+
 function setupQueryBindInput(el: BindableInput): void {
-  const key = el.getAttribute("gg-query-bind");
+  if (boundInputs.has(el)) return;
+  const key = el.getAttribute(ATTR.queryBind);
   if (!key) return;
+  boundInputs.add(el);
+
   const debounceMs =
-    parseInt(el.getAttribute("gg-query-debounce") ?? "0", 10) || 0;
+    parseInt(el.getAttribute(ATTR.queryDebounce) ?? "0", 10) || 0;
 
   syncBindInputFromUrl(el);
 
@@ -140,16 +155,26 @@ function setupQueryBindInput(el: BindableInput): void {
   });
 }
 
-function initQueryBindings(): void {
-  document
-    .querySelectorAll<BindableInput>("[gg-query-bind]")
-    .forEach(setupQueryBindInput);
-
-  // Back/forward navigation doesn't fire pushState notifications, so
-  // re-sync all bound inputs from the URL on popstate.
-  window.addEventListener("popstate", () => {
-    document
-      .querySelectorAll<BindableInput>("[gg-query-bind]")
-      .forEach(syncBindInputFromUrl);
+function initQueryBindings(): () => void {
+  const unbind = onElement(SEL.queryBind, (el) => {
+    if (
+      el instanceof HTMLInputElement ||
+      el instanceof HTMLTextAreaElement ||
+      el instanceof HTMLSelectElement
+    ) {
+      setupQueryBindInput(el);
+    }
   });
+
+  const onPopstate = () => {
+    document
+      .querySelectorAll<BindableInput>(SEL.queryBind)
+      .forEach(syncBindInputFromUrl);
+  };
+  window.addEventListener("popstate", onPopstate);
+
+  return () => {
+    unbind();
+    window.removeEventListener("popstate", onPopstate);
+  };
 }

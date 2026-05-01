@@ -1,22 +1,32 @@
+import { ATTR, SEL } from "./attrs.js";
 import { applySwitchState } from "./helpers/dom.js";
+import { onElement } from "./dom-observer.js";
 
-export function initSwitchEngine(): void {
+export function initSwitchEngine(): () => void {
   // Re-apply whenever gg-switch-state changes on any element.
-  new MutationObserver((mutations) => {
+  const observer = new MutationObserver((mutations) => {
     mutations.forEach((m) => {
-      if (m.attributeName === "gg-switch-state" && m.target instanceof Element) {
+      if (
+        m.attributeName === ATTR.switchState &&
+        m.target instanceof Element
+      ) {
         applySwitchState(m.target);
       }
     });
-  }).observe(document.body, {
+  });
+  observer.observe(document.body, {
     attributes: true,
-    attributeFilter: ["gg-switch-state"],
+    attributeFilter: [ATTR.switchState],
     subtree: true,
   });
 
-  // Apply initial state for any elements that already have gg-switch-state
-  // set at load time, so we don't flash all children before the first mutation.
-  document
-    .querySelectorAll("[gg-switch-state]")
-    .forEach(applySwitchState);
+  // Initial pass for elements present at start AND any inserted later — the
+  // mutation observer above only fires on attribute *changes*, so freshly
+  // inserted nodes need an explicit apply.
+  const unbind = onElement(SEL.switchState, applySwitchState);
+
+  return () => {
+    observer.disconnect();
+    unbind();
+  };
 }

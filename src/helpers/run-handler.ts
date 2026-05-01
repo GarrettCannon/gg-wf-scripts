@@ -1,8 +1,11 @@
+import type { GgErrorEvent } from "../errors.js";
+
 type RunHandlerOptions = {
   prefix: string;
   id: string;
   fields: Record<string, unknown>;
   debug: boolean;
+  emitError?: (event: GgErrorEvent) => void;
 };
 
 export type RunHandlerResult<T> =
@@ -14,10 +17,12 @@ export type RunHandlerResult<T> =
  *
  * Catches throws so engine code can branch on a result instead of try/catch.
  * On success, returns { ok: true, value } where value is whatever the handler
- * returned. On throw, returns { ok: false, error } and logs the error.
+ * returned. On throw, returns { ok: false, error }, logs the error, and emits
+ * a GgErrorEvent so consumers subscribed via app.onError() can ship it to
+ * their error tracker.
  */
 export async function runHandler<T>(
-  { prefix, id, fields, debug }: RunHandlerOptions,
+  { prefix, id, fields, debug, emitError }: RunHandlerOptions,
   fn: () => Promise<T> | T,
 ): Promise<RunHandlerResult<T>> {
   if (debug) {
@@ -36,6 +41,7 @@ export async function runHandler<T>(
     return { ok: true, value };
   } catch (error) {
     console.error(`${prefix} "${id}" threw:`, error);
+    emitError?.({ prefix, id, error, fields });
     return { ok: false, error };
   } finally {
     if (debug) console.groupEnd();

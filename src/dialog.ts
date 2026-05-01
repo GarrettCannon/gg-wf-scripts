@@ -44,9 +44,8 @@ function syncDialogToUrl(): void {
   }
 }
 
-export function initDialog(): void {
-  // Subscribe to query param changes — open/close when "modal" changes
-  onQueryChanged((key, value) => {
+export function initDialog(): () => void {
+  const unsubscribe = onQueryChanged((key, value) => {
     if (key !== "modal") return;
     if (value) {
       openDialog();
@@ -55,12 +54,10 @@ export function initDialog(): void {
     }
   });
 
-  // Inbound events from external code
   document.addEventListener("gg:dialog:open", openDialog);
   document.addEventListener("gg:dialog:close", closeDialog);
 
-  // Backdrop click
-  document.addEventListener("click", (e) => {
+  const onClick = (e: MouseEvent) => {
     const target = e.target;
     if (!(target instanceof HTMLDialogElement)) return;
     if (!target.matches("dialog[open]")) return;
@@ -71,19 +68,27 @@ export function initDialog(): void {
       e.clientY < rect.top ||
       e.clientY > rect.bottom;
     if (outside) dismissViaUrlOrDirect();
-  });
+  };
+  document.addEventListener("click", onClick);
 
-  // Escape key — preempt the default close so the URL stays source of truth
-  document.addEventListener("cancel", (e) => {
+  const onCancel = (e: Event) => {
     const target = e.target;
     if (!(target instanceof HTMLDialogElement)) return;
     e.preventDefault();
     dismissViaUrlOrDirect();
-  });
+  };
+  document.addEventListener("cancel", onCancel);
 
-  // Back button
   window.addEventListener("popstate", syncDialogToUrl);
 
-  // Initial load
   syncDialogToUrl();
+
+  return () => {
+    unsubscribe();
+    document.removeEventListener("gg:dialog:open", openDialog);
+    document.removeEventListener("gg:dialog:close", closeDialog);
+    document.removeEventListener("click", onClick);
+    document.removeEventListener("cancel", onCancel);
+    window.removeEventListener("popstate", syncDialogToUrl);
+  };
 }

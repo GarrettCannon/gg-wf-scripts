@@ -1,6 +1,6 @@
 # Registering handlers
 
-Three registration methods, each keyed by the string id you reference from your markup.
+Three registration methods, each keyed by the string id you reference from your markup. All three accept optional type parameters so you can pin the result/data shape at the call site for autocomplete inside the handler.
 
 ## `app.addQuery(id, fn)`
 
@@ -24,6 +24,17 @@ Return:
 - A single object (or `null`) for use with `gg-data` or `gg-data-form`
 - An array for use with `gg-data-list`
 
+### Typed result
+
+```ts
+type Post = { id: string; title: string };
+
+app.addQuery<Post[]>("posts_list", async ({ sb }, params) => {
+  const { data } = await sb.from("posts").select("*");
+  return data ?? [];   // checked against Post[]
+});
+```
+
 ## `app.addAction(id, fn)`
 
 Register an action triggered by `gg-action`.
@@ -36,6 +47,16 @@ app.addAction("delete_post", async ({ sb }, { id }) => {
 ```
 
 `fn` receives `(context, data, params)`. Return `{ ok: true }` or `{ ok: false, error }`.
+
+### Typed data
+
+```ts
+app.addAction<{ id: string }>("delete_post", async ({ sb }, { id }) => {
+  // `id` is `string` here
+  const { error } = await sb.from("posts").delete().eq("id", id);
+  return error ? { ok: false, error } : { ok: true };
+});
+```
 
 ## `app.addFormAction(id, fn)`
 

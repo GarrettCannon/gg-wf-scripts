@@ -1,45 +1,37 @@
-import { formActionRegistry, type FormFieldError } from "./form-actions.js";
+import type { FormFieldError } from "./form-actions.js";
+import type { FormActionEngineDeps } from "./engine-deps.js";
+import { ATTR, SEL } from "./attrs.js";
 import { populateFields } from "./helpers/dom.js";
+import { findInputs } from "./helpers/form-field.js";
 import { runHandler } from "./helpers/run-handler.js";
 import { runWithLoading } from "./helpers/run-with-loading.js";
+import { onElement } from "./dom-observer.js";
 import { getParams } from "./query-params.js";
-
-type FormFieldEl =
-  | HTMLInputElement
-  | HTMLSelectElement
-  | HTMLTextAreaElement;
-
-function findInputs(form: HTMLFormElement, name: string): NodeListOf<FormFieldEl> {
-  const escaped = CSS.escape(name);
-  return form.querySelectorAll<FormFieldEl>(
-    `input[name="${escaped}"], select[name="${escaped}"], textarea[name="${escaped}"]`,
-  );
-}
 
 function clearFieldError(form: HTMLFormElement, name: string): void {
   findInputs(form, name).forEach((el) => {
-    el.removeAttribute("gg-form-field-invalid");
+    el.removeAttribute(ATTR.formFieldInvalid);
   });
   const escaped = CSS.escape(name);
   form
-    .querySelectorAll(`[gg-form-field-error="${escaped}"]`)
+    .querySelectorAll(`[${ATTR.formFieldError}="${escaped}"]`)
     .forEach((el) => {
       el.textContent = "";
     });
 }
 
 function clearFormErrors(form: HTMLFormElement): void {
-  form.querySelectorAll("[gg-form-field-invalid]").forEach((el) => {
-    el.removeAttribute("gg-form-field-invalid");
+  form.querySelectorAll(SEL.formFieldInvalid).forEach((el) => {
+    el.removeAttribute(ATTR.formFieldInvalid);
   });
-  form.querySelectorAll("[gg-form-field-error]").forEach((el) => {
+  form.querySelectorAll(SEL.formFieldError).forEach((el) => {
     el.textContent = "";
   });
-  form.querySelectorAll("[gg-form-error]").forEach((el) => {
+  form.querySelectorAll(SEL.formError).forEach((el) => {
     el.textContent = "";
   });
-  form.querySelectorAll("[gg-form-error-list]").forEach((list) => {
-    const template = list.querySelector("[gg-list-template]");
+  form.querySelectorAll(SEL.formErrorList).forEach((list) => {
+    const template = list.querySelector(SEL.listTemplate);
     Array.from(list.children).forEach((child) => {
       if (child !== template) child.remove();
     });
@@ -53,11 +45,11 @@ function applyFieldErrors(
   fieldErrors.forEach(({ name, message }) => {
     if (!name) return;
     findInputs(form, name).forEach((el) => {
-      el.setAttribute("gg-form-field-invalid", "true");
+      el.setAttribute(ATTR.formFieldInvalid, "true");
     });
     const escaped = CSS.escape(name);
     form
-      .querySelectorAll(`[gg-form-field-error="${escaped}"]`)
+      .querySelectorAll(`[${ATTR.formFieldError}="${escaped}"]`)
       .forEach((el) => {
         el.textContent = message ?? "";
       });
@@ -68,18 +60,18 @@ function applyErrorList(
   form: HTMLFormElement,
   fieldErrors: FormFieldError[],
 ): void {
-  form.querySelectorAll("[gg-form-error-list]").forEach((list) => {
-    const template = list.querySelector("[gg-list-template]");
+  form.querySelectorAll(SEL.formErrorList).forEach((list) => {
+    const template = list.querySelector(SEL.listTemplate);
     if (!template) {
       console.warn(
-        "[gg-form-error-list] no [gg-list-template] inside list:",
+        `[${ATTR.formErrorList}] no [${ATTR.listTemplate}] inside list:`,
         list,
       );
       return;
     }
     fieldErrors.forEach((record) => {
       const clone = template.cloneNode(true) as HTMLElement;
-      clone.removeAttribute("gg-list-template");
+      clone.removeAttribute(ATTR.listTemplate);
       clone.style.display = "";
       populateFields(clone, record as unknown as Record<string, unknown>);
       list.appendChild(clone);
@@ -90,7 +82,7 @@ function applyErrorList(
 function applyFormError(form: HTMLFormElement, error: unknown): void {
   if (error == null) return;
   const message = typeof error === "string" ? error : String(error);
-  form.querySelectorAll("[gg-form-error]").forEach((el) => {
+  form.querySelectorAll(SEL.formError).forEach((el) => {
     el.textContent = message;
   });
 }
@@ -103,98 +95,118 @@ function bindFieldClearOnInput(form: HTMLFormElement): void {
     if (!(target instanceof Element)) return;
     const name = target.getAttribute("name");
     if (!name) return;
-    if (target.hasAttribute("gg-form-field-invalid")) {
+    if (target.hasAttribute(ATTR.formFieldInvalid)) {
       clearFieldError(form, name);
     }
   });
 }
 
-export function initFormActionEngine(
-  context: unknown,
-  { debug = false }: { debug?: boolean } = {},
-): void {
-  async function handleSubmit(
-    form: HTMLFormElement,
-    event: Event,
-  ): Promise<void> {
-    const id = form.getAttribute("gg-form-action");
-    if (!id) return;
-    const action = formActionRegistry[id];
-    if (!action) {
-      console.warn(`[gg-form-action] no form action registered for "${id}"`);
-      return;
-    }
-
-    event.preventDefault();
-    if (form.hasAttribute("gg-loading")) return;
-
-    if (form.hasAttribute("gg-confirm")) {
-      const text = form.getAttribute("gg-confirm-text") || "Are you sure?";
-      if (!window.confirm(text)) return;
-    }
-
-    clearFormErrors(form);
-
-    const formData = new FormData(form);
-    const params = getParams();
-
-    const submitControls = form.querySelectorAll<HTMLElement>(
-      'button[type="submit"], button:not([type]), input[type="submit"]',
-    );
-
-    const handlerResult = await runWithLoading([form, ...submitControls], () =>
-      runHandler(
-        {
-          prefix: "[gg-form-action]",
-          id,
-          fields: {
-            form,
-            formData: Object.fromEntries(formData),
-            params: Object.fromEntries(params),
-          },
-          debug,
-        },
-        () => action(context, formData, params),
-      ),
-    );
-
-    if (!handlerResult.ok) {
-      applyFormError(form, "Something went wrong. Please try again.");
-      return;
-    }
-
-    const result = handlerResult.value;
-    if (result && (result as { ok?: boolean }).ok === false) {
-      const failure = result as {
-        error?: unknown;
-        field_errors?: FormFieldError[];
-      };
-      const fieldErrors = Array.isArray(failure.field_errors)
-        ? failure.field_errors
-        : [];
-      applyFieldErrors(form, fieldErrors);
-      applyErrorList(form, fieldErrors);
-      applyFormError(form, failure.error);
-      if (!fieldErrors.length && failure.error == null) {
-        console.warn(
-          `[gg-form-action] "${id}" returned ok:false with no error or field_errors`,
-        );
-      }
-    }
+async function handleSubmit<TContext>(
+  form: HTMLFormElement,
+  event: Event,
+  deps: FormActionEngineDeps<TContext>,
+): Promise<void> {
+  const id = form.getAttribute(ATTR.formAction);
+  if (!id) return;
+  const action = deps.formActions[id];
+  if (!action) {
+    console.warn(`[gg-form-action] no form action registered for "${id}"`);
+    deps.emitError({
+      prefix: "[gg-form-action]",
+      id,
+      error: "no form action registered",
+      fields: { form },
+    });
+    return;
   }
 
-  document
-    .querySelectorAll<HTMLFormElement>("form[gg-form-action]")
-    .forEach(bindFieldClearOnInput);
+  event.preventDefault();
+  if (form.hasAttribute(ATTR.loading)) return;
 
-  document.addEventListener("submit", (e) => {
+  if (form.hasAttribute(ATTR.confirm)) {
+    const text = form.getAttribute(ATTR.confirmText) || "Are you sure?";
+    if (!window.confirm(text)) return;
+  }
+
+  clearFormErrors(form);
+
+  const formData = new FormData(form);
+  const params = getParams();
+
+  const submitControls = form.querySelectorAll<HTMLElement>(
+    'button[type="submit"], button:not([type]), input[type="submit"]',
+  );
+
+  const handlerResult = await runWithLoading([form, ...submitControls], () =>
+    runHandler(
+      {
+        prefix: "[gg-form-action]",
+        id,
+        fields: {
+          form,
+          formData: Object.fromEntries(formData),
+          params: Object.fromEntries(params),
+        },
+        debug: deps.debug,
+        emitError: deps.emitError,
+      },
+      () => action(deps.context, formData, params),
+    ),
+  );
+
+  if (!handlerResult.ok) {
+    applyFormError(form, "Something went wrong. Please try again.");
+    return;
+  }
+
+  const result = handlerResult.value;
+  if (result && (result as { ok?: boolean }).ok === false) {
+    const failure = result as {
+      error?: unknown;
+      field_errors?: FormFieldError[];
+    };
+    const fieldErrors = Array.isArray(failure.field_errors)
+      ? failure.field_errors
+      : [];
+    applyFieldErrors(form, fieldErrors);
+    applyErrorList(form, fieldErrors);
+    applyFormError(form, failure.error);
+    if (!fieldErrors.length && failure.error == null) {
+      console.warn(
+        `[gg-form-action] "${id}" returned ok:false with no error or field_errors`,
+      );
+    }
+    deps.emitError({
+      prefix: "[gg-form-action]",
+      id,
+      error: failure.error ?? "validation",
+      fields: { form, fieldErrors },
+    });
+  }
+}
+
+export function initFormActionEngine<TContext>(
+  deps: FormActionEngineDeps<TContext>,
+): () => void {
+  const unbind = onElement(SEL.formAction, (el) => {
+    if (el instanceof HTMLFormElement) bindFieldClearOnInput(el);
+  });
+
+  const onSubmit = (e: Event) => {
     const form = e.target;
     if (
       form instanceof HTMLFormElement &&
-      form.hasAttribute("gg-form-action")
+      form.hasAttribute(ATTR.formAction)
     ) {
       bindFieldClearOnInput(form);
-      handleSubmit(form, e);
+      handleSubmit(form, e, deps);
     }
-  });
+  };
+
+  document.addEventListener("submit", onSubmit);
+
+  return () => {
+    unbind();
+    document.removeEventListener("submit", onSubmit);
+  };
 }

@@ -1,33 +1,43 @@
+import { ATTR, SEL } from "./attrs.js";
 import { setSwitchState } from "./helpers/dom.js";
 import { onQueryChanged } from "./query-params.js";
+import { onElement } from "./dom-observer.js";
 
-export function initBridges(): void {
+export function initBridges(): () => void {
   // ---- gg-switch-query: URL params → gg-switch-state ----
-  // On any URL param change, mirror its value onto matching
-  // [gg-switch-query="<key>"] elements' gg-switch-state.
-  onQueryChanged((key, value) => {
+  const unsubscribeQuery = onQueryChanged((key, value) => {
     document
-      .querySelectorAll(`[gg-switch-query="${CSS.escape(key)}"]`)
+      .querySelectorAll(`[${ATTR.switchQuery}="${CSS.escape(key)}"]`)
       .forEach((el) => setSwitchState(el, value));
   });
 
-  // Initial-load pass: read current URL params and set state for every
-  // [gg-switch-query] on the page, so we don't flash before the first change.
-  const params = new URLSearchParams(window.location.search);
-  document.querySelectorAll("[gg-switch-query]").forEach((el) => {
-    const key = el.getAttribute("gg-switch-query");
+  // Apply current URL state to every [gg-switch-query] element on the page,
+  // including any inserted later via Webflow IX or CMS templates.
+  const unbindSwitch = onElement(SEL.switchQuery, (el) => {
+    const key = el.getAttribute(ATTR.switchQuery);
     if (!key) return;
+    const params = new URLSearchParams(window.location.search);
     setSwitchState(el, params.get(key));
   });
 
   // ---- webflow:emit → Webflow IX ----
-  window.addEventListener("load", () => {
+  let wfHandler: ((e: Event) => void) | null = null;
+  const onLoad = () => {
     Webflow.push(() => {
       const wfIx = Webflow.require("ix3");
-      document.addEventListener("webflow:emit", (e) => {
+      wfHandler = (e: Event) => {
         const detail = (e as CustomEvent<{ event: string }>).detail;
         if (detail?.event) wfIx.emit(detail.event);
-      });
+      };
+      document.addEventListener("webflow:emit", wfHandler);
     });
-  });
+  };
+  window.addEventListener("load", onLoad);
+
+  return () => {
+    unsubscribeQuery();
+    unbindSwitch();
+    window.removeEventListener("load", onLoad);
+    if (wfHandler) document.removeEventListener("webflow:emit", wfHandler);
+  };
 }
