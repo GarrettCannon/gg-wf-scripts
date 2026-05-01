@@ -14,8 +14,6 @@ export const ATTR = {
   dataList: "gg-data-list",
   dataForm: "gg-data-form",
   dataOn: "gg-data-on",
-  dataKey: "gg-data-key",
-  dataValue: "gg-data-value",
   field: "gg-field",
   listTemplate: "gg-list-template",
 
@@ -57,7 +55,6 @@ export const SEL = {
   dataForm: `[${ATTR.dataForm}]`,
   dataAny: `[${ATTR.data}], [${ATTR.dataList}], [${ATTR.dataForm}]`,
   dataAnyOn: `[${ATTR.data}][${ATTR.dataOn}], [${ATTR.dataList}][${ATTR.dataOn}], [${ATTR.dataForm}][${ATTR.dataOn}]`,
-  dataKey: `[${ATTR.dataKey}]`,
   field: `[${ATTR.field}]`,
   listTemplate: `[${ATTR.listTemplate}]`,
   switchState: `[${ATTR.switchState}]`,

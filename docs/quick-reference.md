@@ -6,16 +6,16 @@ Every `gg-*` attribute the library reads or writes, what reads it, and what shap
 
 | Attribute | On | Reads / writes | Notes |
 |---|---|---|---|
-| `gg-data="<id>"` | container | reads | Runs query `<id>`, expects single object. Populates `[gg-field]`, `[gg-switch-field]`, `[gg-data-key]` descendants. |
+| `gg-data="<id>"` | container | reads | Runs query `<id>`, expects single object. Populates `[gg-field]` and `[gg-switch-field]` descendants. |
 | `gg-data-list="<id>"` | container | reads | Runs query `<id>`, expects array. Clones `[gg-list-template]` per record. |
 | `gg-data-form="<id>"` | `<form>` or container | reads | Runs query `<id>`, expects single object. Pre-fills inputs by `name`. |
 | `gg-data-on="<key>,..."` | same as above | reads | Re-runs the query whenever any listed URL param changes. |
 | `gg-field="<dot.path>"` | descendant | writes `textContent` | Set from the parent record. Skipped if the path resolves to `null`/`undefined`. |
 | `gg-list-template` | child of `gg-data-list` | — | The template element to clone per record. The original stays in the DOM (hidden via the engine). |
-| `gg-data-key="<dot.path>"` | descendant (incl. shadow DOM) | writes `gg-data-value` | Serializes the path's value as JSON onto `gg-data-value`. For web components that read JSON-encoded props. |
-| `gg-data-value="<json>"` | descendant | written | Output of `gg-data-key`. |
 
 **Record shape:** plain object. Dot-paths are split by `.` and walked with `getPath`. Arrays for `gg-data` or `gg-data-form` produce a `console.warn`.
+
+**Reading the record from custom code:** every `gg-data`, `gg-data-form`, and cloned `gg-data-list` row sets `element.__ggRecord` and dispatches a bubbling `gg-data-ready` CustomEvent (with `detail.record`) on itself after the query resolves. Web components / React islands listen on the container (e.g. `host.closest("form")`) to hydrate their own state.
 
 ## Actions
 
@@ -85,3 +85,11 @@ Custom events the library listens for. Dispatch from your own code to drive the 
 | `gg:dialog:close` | `document` | Closes the page's `<dialog>` (without touching the URL). |
 | `gg:shadow:click` | `document`, with `detail.target = <Element>` | Forwarded click for elements inside a shadow root, since shadow DOM swallows bubbling clicks. |
 | `webflow:emit` | `document`, with `detail.event = "<ix-event-name>"` | Bridged into Webflow IX (`Webflow.require("ix3").emit`). |
+
+## Outbound events
+
+Custom events the library dispatches. Listen from your own code to react to engine state:
+
+| Event | Where dispatched | Detail | When |
+|---|---|---|---|
+| `gg-data-ready` | the `gg-data` / `gg-data-form` container or cloned `gg-data-list` row | `{ record }` | After the query resolves and `__ggRecord` has been written. Bubbles, so a single listener on a parent can observe many containers. |

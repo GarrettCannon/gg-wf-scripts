@@ -88,22 +88,27 @@ Display data from your queries in the DOM.
 
 #### Passing data to web components / React
 
-For elements that manage their own DOM (custom elements wrapping React, Lit, etc.), use `gg-data-key` to receive a JSON-serialized value as a `gg-data-value` attribute. The component listens for attribute changes and updates its own state.
+For elements that manage their own DOM (custom elements wrapping React, Lit, etc.), pull the record from the container's `__ggRecord` property after each query run. Every `gg-data`, `gg-data-form`, and cloned `gg-data-list` row exposes the record this way, and the engine dispatches a `gg-data-ready` CustomEvent on the same element with `detail.record` once it's set.
 
 ```html
-<div gg-data="post_form">
-  <!-- record.schools is e.g. [{ id, name }, ...] -->
-  <my-select gg-data-key="schools"></my-select>
-</div>
+<form gg-data-form="post_form">
+  <input name="title" />
+  <my-select name="school_id"></my-select>
+</form>
 ```
 
-After the query runs, the engine resolves the dot-path against the record and writes the result:
-
-```html
-<my-select gg-data-key="schools" gg-data-value='[{"id":1,"name":"Acme"}]'></my-select>
+```js
+// Inside <my-select> — read the parent record once it's ready.
+const form = host.closest("form");
+form.addEventListener("gg-data-ready", (e) => {
+  const record = e.detail.record;
+  // hydrate from record[host.getAttribute("name")] or whatever path makes sense
+});
+// Already populated? Read it directly:
+if (form.__ggRecord) hydrate(form.__ggRecord);
 ```
 
-The lookup pierces shadow roots, so the marker can live inside a component's shadow DOM. Leaving `gg-data-key=""` passes the entire record. Note: if the component renders after the query runs, it won't be found — re-run the query (e.g. via `gg-data-on`) once the component has mounted, or have the component pull from `host.__ggRecord` on connect.
+The event bubbles, so each form/container's events are scoped to that subtree — listeners attached to one form never fire for another. From inside a shadow root, walk out via `getRootNode().host` before calling `closest("form")`.
 
 #### Re-running on URL changes
 

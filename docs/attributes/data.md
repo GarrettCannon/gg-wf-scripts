@@ -41,25 +41,28 @@ Display data from your registered queries directly in the DOM.
 
 ## Passing data to web components / React
 
-For elements that manage their own DOM (custom elements wrapping React, Lit, etc.), use `gg-data-key` to receive a JSON-serialized value as a `gg-data-value` attribute. The component listens for attribute changes and updates its own state.
+Elements that manage their own DOM (custom elements wrapping React, Lit, etc.) read from the container's `__ggRecord` property. Every `gg-data`, `gg-data-form`, and cloned `gg-data-list` row stamps the record there after the query resolves, and the engine fires a `gg-data-ready` CustomEvent on the same element with `detail.record`.
 
 ```html
-<div gg-data="post_form">
-  <!-- record.schools is e.g. [{ id, name }, ...] -->
-  <my-select gg-data-key="schools"></my-select>
-</div>
+<form gg-data-form="post_form">
+  <input name="title" />
+  <my-select name="school_id"></my-select>
+</form>
 ```
 
-After the query runs, the engine resolves the dot-path against the record and writes the result:
-
-```html
-<my-select gg-data-key="schools" gg-data-value='[{"id":1,"name":"Acme"}]'></my-select>
+```js
+// Inside <my-select> — wait for the parent record, then hydrate.
+const form = host.closest("form");
+form.addEventListener("gg-data-ready", (e) => {
+  hydrate(e.detail.record);
+});
+if (form.__ggRecord) hydrate(form.__ggRecord); // already populated
 ```
 
-The lookup pierces shadow roots, so the marker can live inside a component's shadow DOM. Leaving `gg-data-key=""` passes the entire record.
+The event bubbles, so listeners on one form/container never fire for another. From inside a shadow root, the host element's parent chain is unreachable via `closest()` directly — walk out with `getRootNode().host` first.
 
 ::: tip
-If the component renders after the query runs, it won't be found — re-run the query (e.g. via `gg-data-on`) once the component has mounted, or have the component pull from `host.__ggRecord` on connect.
+If the component re-runs its own search query against the library, it can call any registered query imperatively via `app.queries[id](app.context, params)`. Stash the `App` returned from `init()` on `window` (or thread it however you prefer) so custom-code components can reach it.
 :::
 
 ## Re-running on URL changes

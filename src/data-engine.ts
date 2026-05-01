@@ -24,21 +24,10 @@ function applySwitchFields(root: Element, record: DataRecord): void {
   });
 }
 
-function queryDeep(root: ParentNode, selector: string): Element[] {
-  const results: Element[] = [...root.querySelectorAll(selector)];
-  root.querySelectorAll("*").forEach((el) => {
-    if (el.shadowRoot) results.push(...queryDeep(el.shadowRoot, selector));
-  });
-  return results;
-}
-
-function applyDataValues(root: ParentNode, record: DataRecord): void {
-  queryDeep(root, SEL.dataKey).forEach((el) => {
-    const path = el.getAttribute(ATTR.dataKey);
-    const value = path ? getPath(record, path) : record;
-    if (value === undefined) return;
-    el.setAttribute(ATTR.dataValue, JSON.stringify(value));
-  });
+function emitDataReady(container: Element, record: DataRecord): void {
+  container.dispatchEvent(
+    new CustomEvent("gg-data-ready", { bubbles: true, detail: { record } }),
+  );
 }
 
 function populateFormFields(root: Element, record: DataRecord): void {
@@ -115,8 +104,8 @@ async function runQuery<TContext>(
       clone.__ggRecord = record;
       populateFields(clone, record);
       applySwitchFields(clone, record);
-      applyDataValues(clone, record);
       container.appendChild(clone);
+      emitDataReady(clone, record);
     });
   } else if (isForm) {
     if (Array.isArray(result)) {
@@ -129,7 +118,7 @@ async function runQuery<TContext>(
     const record = result as DataRecord;
     container.__ggRecord = record;
     populateFormFields(container, record);
-    applyDataValues(container, record);
+    emitDataReady(container, record);
   } else {
     if (Array.isArray(result)) {
       console.warn(
@@ -142,7 +131,7 @@ async function runQuery<TContext>(
     container.__ggRecord = record;
     populateFields(container, record);
     applySwitchFields(container, record);
-    applyDataValues(container, record);
+    emitDataReady(container, record);
   }
 }
 
