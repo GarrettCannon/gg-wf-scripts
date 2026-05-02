@@ -93,3 +93,4 @@ Custom events the library dispatches. Listen from your own code to react to engi
 | Event | Where dispatched | Detail | When |
 |---|---|---|---|
 | `gg-data-ready` | the `gg-data` / `gg-data-form` container or cloned `gg-data-list` row | `{ record }` | After the query resolves and `__ggRecord` has been written. Bubbles, so a single listener on a parent can observe many containers. |
+| `gg-app-ready` | `document` | `{ app }` | Fired once during `init()` after the App is built. The same App is also set as `window.ggApp`. Skip both with `init({ expose: false })`. |

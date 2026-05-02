@@ -110,6 +110,20 @@ if (form.__ggRecord) hydrate(form.__ggRecord);
 
 The event bubbles, so each form/container's events are scoped to that subtree — listeners attached to one form never fire for another. From inside a shadow root, walk out via `getRootNode().host` before calling `closest("form")`.
 
+#### Calling queries / actions from custom code
+
+`init()` sets `window.ggApp` by default and dispatches a `gg-app-ready` CustomEvent on `document` (with `detail.app`). Components can call any registered handler imperatively — useful for typeahead/combobox patterns that don't fit the declarative `gg-data*` model:
+
+```js
+const app = window.ggApp; // or await `gg-app-ready`
+const results = await app.queries.search_schools(
+  app.context,
+  new URLSearchParams({ q: "acme" }),
+);
+```
+
+Set `expose: false` on `init()` if you'd rather wire the reference yourself.
+
 #### Re-running on URL changes
 
 Add `gg-data-on` to re-run a query when specific URL params change:
@@ -367,6 +381,7 @@ Returns an app instance with `addQuery`, `addAction`, and `start` methods.
 | `context` | `object` | No | Arbitrary object passed to every query and action. Put backend clients or anything else your handlers need on it. Defaults to `{}`. |
 | `auth` | `object` | No | Auth adapter (see below). If omitted, `gg-auth`/`gg-role` attrs are never set. |
 | `debug` | `boolean` | No | When `true`, every query and action is logged to the console (trigger/container, data, result, duration). Defaults to `false`. |
+| `expose` | `boolean` | No | When `true` (default), the App is set as `window.ggApp` and a `gg-app-ready` CustomEvent is dispatched on `document` so React/web-component islands can pick it up. Set to `false` for tests, multiple instances, or non-browser hosts. |
 
 ### Auth adapter
 

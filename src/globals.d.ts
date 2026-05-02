@@ -1,3 +1,5 @@
+import type { App } from "./index.js";
+
 export {};
 
 declare global {
@@ -13,6 +15,14 @@ declare global {
     start(): void;
     stop(): void;
   };
+
+  interface Window {
+    ggApp?: App<unknown>;
+  }
+
+  interface DocumentEventMap {
+    "gg-app-ready": CustomEvent<{ app: App<unknown> }>;
+  }
 
   interface Element {
     __ggRecord?: Record<string, unknown>;

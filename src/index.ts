@@ -36,6 +36,12 @@ export type InitOptions<TContext = unknown> = {
    * trigger/container, data, result, and duration.
    */
   debug?: boolean;
+  /**
+   * When true (default), the App is exposed as `window.ggApp` and a
+   * `gg-app-ready` CustomEvent is dispatched on `document`. Set to `false`
+   * to opt out — useful for tests, multiple instances, or non-browser hosts.
+   */
+  expose?: boolean;
 };
 
 export type App<TContext = unknown> = {
@@ -89,7 +95,12 @@ export type App<TContext = unknown> = {
  * Create a gg-scripts app instance.
  */
 export function init<TContext = unknown>(
-  { context = {} as TContext, auth, debug = false }: InitOptions<TContext> = {},
+  {
+    context = {} as TContext,
+    auth,
+    debug = false,
+    expose = true,
+  }: InitOptions<TContext> = {},
 ): App<TContext> {
   const queries: Record<string, Query<TContext>> = {};
   const actions: Record<string, Action<TContext>> = {};
@@ -145,5 +156,18 @@ export function init<TContext = unknown>(
       cleanups = [];
     },
   };
+
+  if (expose && typeof window !== "undefined") {
+    if (window.ggApp) {
+      console.warn(
+        "[gg] window.ggApp is being replaced by a new init() call",
+      );
+    }
+    window.ggApp = app as App<unknown>;
+    document.dispatchEvent(
+      new CustomEvent("gg-app-ready", { detail: { app } }),
+    );
+  }
+
   return app;
 }

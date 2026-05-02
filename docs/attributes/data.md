@@ -62,7 +62,7 @@ if (form.__ggRecord) hydrate(form.__ggRecord); // already populated
 The event bubbles, so listeners on one form/container never fire for another. From inside a shadow root, the host element's parent chain is unreachable via `closest()` directly — walk out with `getRootNode().host` first.
 
 ::: tip
-If the component re-runs its own search query against the library, it can call any registered query imperatively via `app.queries[id](app.context, params)`. Stash the `App` returned from `init()` on `window` (or thread it however you prefer) so custom-code components can reach it.
+If the component re-runs its own search query against the library, it can call any registered query imperatively via `app.queries[id](app.context, params)`. The library exposes the `App` as `window.ggApp` automatically (and dispatches a `gg-app-ready` event on `document` with `detail.app`), so custom-code components can reach it without any plumbing. Pass `expose: false` to `init()` to opt out.
 :::
 
 ## Re-running on URL changes
