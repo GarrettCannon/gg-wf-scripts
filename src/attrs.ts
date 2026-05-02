@@ -67,4 +67,6 @@ export const SEL = {
   formFieldError: `[${ATTR.formFieldError}]`,
   formError: `[${ATTR.formError}]`,
   formErrorList: `[${ATTR.formErrorList}]`,
+  auth: `[${ATTR.auth}]`,
+  role: `[${ATTR.role}]`,
 } as const;

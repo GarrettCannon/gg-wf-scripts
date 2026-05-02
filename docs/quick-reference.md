@@ -57,9 +57,9 @@ Every `gg-*` attribute the library reads or writes, what reads it, and what shap
 | Attribute | On | Reads / writes | Notes |
 |---|---|---|---|
 | `gg-switch-state="<value>"` | container | reads + written | Children with a matching `gg-case` are shown; others hidden. |
-| `gg-switch-field="<dot.path>"` | container inside `gg-data` | reads | Writes the path's value onto `gg-switch-state`. |
-| `gg-switch-query="<key>"` | container | reads | Mirrors a URL param onto `gg-switch-state`. |
-| `gg-case="<value>"` | child of a switch | reads | Visible when its value matches the parent's `gg-switch-state`. Empty string = default. |
+| `gg-switch-field="<dot.path>"` | container inside `gg-data` | reads | Writes the path's value onto `gg-switch-state`. Comma-separated paths are joined positionally. |
+| `gg-switch-query="<key>"` | container | reads | Mirrors a URL param onto `gg-switch-state`. Comma-separated keys are joined positionally. |
+| `gg-case="<value>"` | child of a switch | reads | Visible when its value matches the parent's `gg-switch-state`. Empty string = default. Comma = positional AND, `\|` = OR alternatives within a position. |
 
 ## Visibility
 
@@ -72,8 +72,10 @@ Every `gg-*` attribute the library reads or writes, what reads it, and what shap
 | Attribute | On | Reads / writes | Notes |
 |---|---|---|---|
 | `gg-loading` | trigger / form | written | Set to `"true"` while a handler is in flight. Buttons / inputs also get the native `disabled` attribute. |
-| `gg-auth` | `<body>` | written | `"true"` when a user is signed in, `"false"` otherwise. Style with `body[gg-auth="true"] [data-auth-only]`. |
+| `gg-auth` | `<body>` | written | `"true"` when a user is signed in, `"false"` otherwise. |
+| `gg-auth="true"` / `"false"` | any element | reads | Hidden via inline `display: none` when its value doesn't match `body[gg-auth]`. |
 | `gg-role="<role>"` | `<body>` | written | The string returned by `auth.roleQuery`. Removed when no role / signed out. |
+| `gg-role="<role>"` | any element | reads | Hidden when the value doesn't match `body[gg-role]`. Comma-separate for OR, e.g. `gg-role="admin,editor"`. |
 
 ## Inbound events
 

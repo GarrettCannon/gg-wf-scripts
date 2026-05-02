@@ -3,6 +3,7 @@ import type { Action } from "./actions.js";
 import type { FormAction } from "./form-actions.js";
 import { setQueryParams, removeQueryParams, initQueryParams } from "./query-params.js";
 import { initAuth, type AuthAdapter } from "./auth.js";
+import { initAuthEngine } from "./auth-engine.js";
 import { initSwitchEngine } from "./switch-engine.js";
 import { initDialog } from "./dialog.js";
 import { initBridges } from "./bridges.js";
@@ -135,6 +136,7 @@ export function init<TContext = unknown>(
 
         if (auth) initAuth(context, auth);
         cleanups.push(startDomObserver());
+        cleanups.push(initAuthEngine());
         cleanups.push(initSwitchEngine());
         cleanups.push(initQueryParams());
         cleanups.push(initDialog());

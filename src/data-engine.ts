@@ -16,9 +16,22 @@ type DataRecord = Record<string, unknown>;
 
 function applySwitchFields(root: Element, record: DataRecord): void {
   root.querySelectorAll(SEL.switchField).forEach((el) => {
-    const path = el.getAttribute(ATTR.switchField);
-    if (!path) return;
-    const value = getPath(record, path);
+    const attr = el.getAttribute(ATTR.switchField);
+    if (!attr) return;
+    const paths = attr
+      .split(",")
+      .map((p) => p.trim())
+      .filter(Boolean);
+    if (!paths.length) return;
+    const value =
+      paths.length === 1
+        ? getPath(record, paths[0]!)
+        : paths
+            .map((p) => {
+              const v = getPath(record, p);
+              return v == null ? "" : String(v);
+            })
+            .join(",");
     setSwitchState(el, value);
     applySwitchState(el);
   });
@@ -98,7 +111,9 @@ async function runQuery<TContext>(
     result.forEach((record: DataRecord) => {
       const clone = template.cloneNode(true) as HTMLElement;
       clone.removeAttribute(ATTR.listTemplate);
-      clone.setAttribute(ATTR.querySet, `modal:view,id:${record.id}`);
+      if (clone instanceof HTMLButtonElement) {
+        clone.setAttribute(ATTR.querySet, `modal:view,id:${record.id}`);
+      }
       clone.style.display = "flex";
       if (record?.id != null) clone.id = String(record.id);
       clone.__ggRecord = record;

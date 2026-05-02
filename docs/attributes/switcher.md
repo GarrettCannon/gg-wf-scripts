@@ -29,3 +29,26 @@ The switcher walks up the DOM to find the nearest `gg-data` / `gg-data-list` row
 ## Default state
 
 `gg-case=""` acts as the default/empty state. It matches when the URL param or field is missing or empty.
+
+## Multiple values
+
+Both `gg-switch-query` and `gg-switch-field` accept comma-separated keys / paths. The state becomes the values joined by commas in the same order, and `gg-case` matches positionally (AND).
+
+```html
+<div gg-switch-query="sortBy,sortDir">
+  <button gg-case="date,asc">Date ↑</button>
+  <button gg-case="date,desc">Date ↓</button>
+  <button gg-case="title,asc">Title ↑</button>
+</div>
+```
+
+Inside one position, use `|` for OR alternatives:
+
+```html
+<div gg-switch-field="status">
+  <span gg-case="published|featured">Live</span>
+  <span gg-case="draft|archived">Hidden</span>
+</div>
+```
+
+The two can combine — `gg-case="date|title,asc"` matches when sort is `date asc` or `title asc`.

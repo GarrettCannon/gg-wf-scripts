@@ -22,16 +22,33 @@ export function setSwitchState(el: Element, value: unknown): void {
   el.setAttribute("gg-switch-state", value == null ? "" : String(value));
 }
 
+function splitTrim(value: string, sep: string): string[] {
+  return value.split(sep).map((s) => s.trim());
+}
+
+function caseMatches(caseAttr: string, state: string): boolean {
+  const stateParts = splitTrim(state, ",");
+  const caseParts = splitTrim(caseAttr, ",");
+  if (caseParts.length !== stateParts.length) return false;
+  return caseParts.every((part, i) => {
+    const alternatives = splitTrim(part, "|");
+    return alternatives.includes(stateParts[i] ?? "");
+  });
+}
+
 /**
  * Show the [gg-case] child whose value matches the container's current
  * gg-switch-state; hide the rest with display:none.
+ *
+ * Comma in state/case = positional AND match. Pipe in a case position = OR
+ * alternation within that position.
  */
 export function applySwitchState(container: Element): void {
   const state = container.getAttribute("gg-switch-state") ?? "";
   Array.from(container.children).forEach((child) => {
     if (!(child instanceof HTMLElement)) return;
-    if (!child.hasAttribute("gg-case")) return;
-    const match = child.getAttribute("gg-case") === state;
-    child.style.display = match ? "" : "none";
+    const caseAttr = child.getAttribute("gg-case");
+    if (caseAttr == null) return;
+    child.style.display = caseMatches(caseAttr, state) ? "" : "none";
   });
 }

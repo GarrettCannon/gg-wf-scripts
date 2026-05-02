@@ -8,9 +8,10 @@ Show or hide elements based on auth state. You provide the auth adapter, so any 
 <a href="/login" gg-auth="false">Log in</a>
 <a href="/account" gg-auth="true">My account</a>
 <a href="/admin" gg-role="superuser">Admin panel</a>
+<a href="/dashboard" gg-role="admin,editor">Dashboard</a>
 ```
 
-`gg-auth` is set on `<body>` as `"true"` or `"false"`. `gg-role` is set if you provide a `roleQuery`.
+`gg-auth` is set on `<body>` as `"true"` or `"false"`. `gg-role` is set if you provide a `roleQuery`. Any element with a `gg-auth` or `gg-role` attribute is hidden via inline `display: none` when its value doesn't match the body. Use commas on `gg-role` to match any of several roles.
 
 ## Adapter
 
@@ -48,11 +49,12 @@ const app = init({
 });
 ```
 
-## CSS
+## Avoiding flash on load
+
+Visibility is applied by JS once `init()` runs, so an element may briefly render in its default state before being hidden. To avoid the flash, hide them in CSS until auth is ready:
 
 ```css
-body[gg-auth="false"] [gg-auth="true"] { display: none; }
-body[gg-auth="true"]  [gg-auth="false"] { display: none; }
+[gg-auth], [gg-role] { display: none; }
 ```
 
-For roles, target the body's `gg-role` attribute the same way.
+The library will set `display: ""` on elements that match, letting your stylesheet's natural display take over.
