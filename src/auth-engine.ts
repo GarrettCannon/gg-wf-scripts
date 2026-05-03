@@ -1,5 +1,6 @@
 import { ATTR, SEL } from "./attrs.js";
 import { onElement } from "./dom-observer.js";
+import { setVisibility } from "./helpers/visibility.js";
 
 function isMatch(elValue: string, bodyValue: string): boolean {
   return elValue
@@ -14,7 +15,7 @@ function applyVisibility(el: Element, attr: string): void {
   const elValue = el.getAttribute(attr);
   if (elValue == null) return;
   const bodyValue = document.body.getAttribute(attr) ?? "";
-  el.style.display = isMatch(elValue, bodyValue) ? "" : "none";
+  setVisibility(el, isMatch(elValue, bodyValue));
 }
 
 function applyAll(attr: string): void {

@@ -6,6 +6,7 @@ import {
   setSwitchState,
   applySwitchState,
 } from "./helpers/dom.js";
+import { setVisibility } from "./helpers/visibility.js";
 import { writeField } from "./helpers/form-field.js";
 import { runHandler } from "./helpers/run-handler.js";
 import { runWithLoading } from "./helpers/run-with-loading.js";
@@ -114,12 +115,12 @@ async function runQuery<TContext>(
       if (clone instanceof HTMLButtonElement) {
         clone.setAttribute(ATTR.querySet, `modal:view,id:${record.id}`);
       }
-      clone.style.display = "flex";
       if (record?.id != null) clone.id = String(record.id);
       clone.__ggRecord = record;
       populateFields(clone, record);
       applySwitchFields(clone, record);
       container.appendChild(clone);
+      setVisibility(clone, true);
       emitDataReady(clone, record);
     });
   } else if (isForm) {

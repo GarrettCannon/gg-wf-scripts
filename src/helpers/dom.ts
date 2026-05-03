@@ -1,4 +1,5 @@
 import { getPath } from "./path.js";
+import { setVisibility } from "./visibility.js";
 
 /**
  * Set textContent on every [gg-field] descendant of `root` to the value
@@ -49,6 +50,6 @@ export function applySwitchState(container: Element): void {
     if (!(child instanceof HTMLElement)) return;
     const caseAttr = child.getAttribute("gg-case");
     if (caseAttr == null) return;
-    child.style.display = caseMatches(caseAttr, state) ? "" : "none";
+    setVisibility(child, caseMatches(caseAttr, state));
   });
 }

@@ -12,6 +12,8 @@ import { initDataEngine } from "./data-engine.js";
 import { initActionEngine } from "./action-engine.js";
 import { initFormActionEngine } from "./form-action-engine.js";
 import { startDomObserver } from "./dom-observer.js";
+import { setTransitionConfig } from "./helpers/visibility.js";
+import type { Easing } from "motion";
 import { createErrorBus, type ErrorHandler, type GgErrorEvent } from "./errors.js";
 
 export { setQueryParams, removeQueryParams };
@@ -43,6 +45,15 @@ export type InitOptions<TContext = unknown> = {
    * to opt out — useful for tests, multiple instances, or non-browser hosts.
    */
   expose?: boolean;
+  /**
+   * Global fade-in/out for every show/hide the library performs (auth, switch
+   * cases, form-visibility, data list items). Omit or set duration to 0 for
+   * instant toggles (default). `duration` is in milliseconds. `easing` accepts
+   * Motion's keyword set ("easeInOut", "easeIn", "circOut", "anticipate", …)
+   * or a `[x1,y1,x2,y2]` cubic-bezier tuple. `prefers-reduced-motion: reduce`
+   * always forces instant.
+   */
+  transition?: { duration?: number; easing?: Easing };
 };
 
 export type App<TContext = unknown> = {
@@ -101,8 +112,10 @@ export function init<TContext = unknown>(
     auth,
     debug = false,
     expose = true,
+    transition,
   }: InitOptions<TContext> = {},
 ): App<TContext> {
+  if (transition) setTransitionConfig(transition);
   const queries: Record<string, Query<TContext>> = {};
   const actions: Record<string, Action<TContext>> = {};
   const formActions: Record<string, FormAction<TContext>> = {};

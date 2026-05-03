@@ -19,6 +19,27 @@ const app = init({
 | `context` | `object` | No | Arbitrary object passed to every query and action. Put backend clients or anything else your handlers need on it. Defaults to `{}`. |
 | `auth` | `object` | No | Auth adapter (see below). If omitted, `gg-auth` / `gg-role` attrs are never set. |
 | `debug` | `boolean` | No | When `true`, every query and action is logged to the console (trigger/container, data, result, duration). Defaults to `false`. |
+| `expose` | `boolean` | No | When `true` (default), the app is exposed as `window.ggApp` and a `gg-app-ready` CustomEvent is dispatched on `document`. Set to `false` for tests, multiple instances, or non-browser hosts. |
+| `transition` | `object` | No | Global fade-in/out for every show/hide the library performs. See [Transitions](#transitions) below. Omit for instant toggles (default). |
+
+## Transitions
+
+Every show/hide the library performs — `gg-auth` / `gg-role` gating, `gg-switch-state` cases, `gg-visible-when` form fields, and freshly-rendered `gg-data-list` rows — runs through a single visibility helper. By default it's an instant `display:none` toggle (matching pre-6.0 behavior). Pass a `transition` to fade them instead.
+
+```js
+init({
+  transition: { duration: 200, easing: "easeInOut" },
+});
+```
+
+| Field | Type | Description |
+|---|---|---|
+| `duration` | `number` | Fade duration in **milliseconds**. Defaults to `0` (instant). |
+| `easing` | `Easing` | Motion's easing keyword set: `"linear"`, `"easeIn"`, `"easeOut"`, `"easeInOut"` (default), `"circIn"` / `"circOut"` / `"circInOut"`, `"backIn"` / `"backOut"` / `"backInOut"`, `"anticipate"`. Or a `[x1, y1, x2, y2]` cubic-bezier tuple. |
+
+The system honors `prefers-reduced-motion: reduce` — animations are skipped automatically when the OS setting is on, regardless of `duration`.
+
+Hidden elements also get `inert` and `aria-hidden="true"` so they're removed from the tab order and from screen readers — this happens whether or not `transition` is configured.
 
 ## Auth adapter
 

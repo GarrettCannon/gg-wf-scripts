@@ -50,6 +50,19 @@ Load on your site:
 <script src="https://your-cdn.com/site.js"></script>
 ```
 
+## Optional: fade transitions
+
+By default every show/hide is an instant `display:none` flip. Pass a `transition` to `init` to fade everything (auth gating, switch cases, form-visibility, data-list rows) through a single global setting:
+
+```js
+const app = init({
+  context: { sb },
+  transition: { duration: 200, easing: "easeInOut" },
+});
+```
+
+See [Transitions in the init reference](/api/init#transitions) for the easing keywords and the `prefers-reduced-motion` behavior.
+
 ## Next steps
 
 - [Install the library](/guide/installation)

@@ -1,8 +1,7 @@
 import { ATTR, SEL } from "./attrs.js";
 import { readField } from "./helpers/form-field.js";
+import { setVisibility } from "./helpers/visibility.js";
 import { onElement } from "./dom-observer.js";
-
-const TRANSITION_MS = 200;
 
 type Condition = { name: string; value: string };
 
@@ -22,15 +21,7 @@ function matchesAny(scope: ParentNode, conditions: Condition[]): boolean {
   );
 }
 
-type Binding = {
-  el: HTMLElement;
-  scope: Element;
-  conditions: Condition[];
-  evaluate: () => void;
-  cleanup: () => void;
-};
-
-const bindings = new WeakMap<HTMLElement, Binding>();
+const bindings = new WeakMap<HTMLElement, { cleanup: () => void }>();
 
 function setupVisibility(el: HTMLElement): void {
   if (bindings.has(el)) return;
@@ -48,67 +39,23 @@ function setupVisibility(el: HTMLElement): void {
   }
 
   const conditions = parseConditions(attr);
-
-  el.style.transition = "none";
-  el.style.opacity = "0";
-  el.style.display = "none";
-  el.style.pointerEvents = "none";
-  el.setAttribute("inert", "");
-  el.setAttribute("aria-hidden", "true");
-
-  let lastState = false;
-  let hideTimer: ReturnType<typeof setTimeout> | undefined;
-
-  function show(): void {
-    if (hideTimer !== undefined) {
-      clearTimeout(hideTimer);
-      hideTimer = undefined;
-    }
-    el.removeAttribute("inert");
-    el.removeAttribute("aria-hidden");
-    el.style.display = "";
-    el.style.pointerEvents = "";
-    requestAnimationFrame(() => {
-      el.style.opacity = "1";
-    });
-  }
-
-  function hide(): void {
-    el.style.opacity = "0";
-    el.style.pointerEvents = "none";
-    el.setAttribute("inert", "");
-    el.setAttribute("aria-hidden", "true");
-    hideTimer = setTimeout(() => {
-      el.style.display = "none";
-      hideTimer = undefined;
-    }, TRANSITION_MS);
-  }
+  let lastState: boolean | undefined;
 
   function evaluate(): void {
     const shouldShow = matchesAny(scope!, conditions);
     if (shouldShow === lastState) return;
     lastState = shouldShow;
-    if (shouldShow) show();
-    else hide();
+    setVisibility(el, shouldShow);
   }
 
   scope.addEventListener("change", evaluate);
   scope.addEventListener("input", evaluate);
-
-  requestAnimationFrame(() => {
-    el.style.transition = `opacity ${TRANSITION_MS}ms ease`;
-    evaluate();
-  });
+  evaluate();
 
   bindings.set(el, {
-    el,
-    scope,
-    conditions,
-    evaluate,
     cleanup: () => {
       scope.removeEventListener("change", evaluate);
       scope.removeEventListener("input", evaluate);
-      if (hideTimer !== undefined) clearTimeout(hideTimer);
     },
   });
 }
