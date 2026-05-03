@@ -13,7 +13,7 @@ function applyVisibility(el: Element, attr: string): void {
   if (!(el instanceof HTMLElement)) return;
   if (el === document.body) return;
   const elValue = el.getAttribute(attr);
-  if (elValue == null) return;
+  if (elValue == null || elValue.trim() === "") return;
   const bodyValue = document.body.getAttribute(attr) ?? "";
   setVisibility(el, isMatch(elValue, bodyValue));
 }
