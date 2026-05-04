@@ -105,6 +105,8 @@ async function runQuery<TContext>(
       return;
     }
 
+    if (template instanceof HTMLElement) template.style.display = "none";
+
     Array.from(container.children).forEach((child) => {
       if (child !== template) child.remove();
     });
