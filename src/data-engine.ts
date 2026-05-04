@@ -34,7 +34,7 @@ function applySwitchFields(root: Element, record: DataRecord): void {
             })
             .join(",");
     setSwitchState(el, value);
-    applySwitchState(el);
+    applySwitchState(el, { instant: true });
   });
 }
 

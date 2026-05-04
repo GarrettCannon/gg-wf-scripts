@@ -44,12 +44,16 @@ function caseMatches(caseAttr: string, state: string): boolean {
  * Comma in state/case = positional AND match. Pipe in a case position = OR
  * alternation within that position.
  */
-export function applySwitchState(container: Element): void {
+export function applySwitchState(
+  container: Element,
+  options?: { instant?: boolean },
+): void {
   const state = container.getAttribute("gg-switch-state") ?? "";
+  const instant = options?.instant === true;
   Array.from(container.children).forEach((child) => {
     if (!(child instanceof HTMLElement)) return;
     const caseAttr = child.getAttribute("gg-case");
     if (caseAttr == null) return;
-    setVisibility(child, caseMatches(caseAttr, state));
+    setVisibility(child, caseMatches(caseAttr, state), { instant });
   });
 }

@@ -37,7 +37,7 @@ function effectiveDuration(): number {
 	return reduceMotion() ? 0 : config.duration;
 }
 
-function show(el: HTMLElement): void {
+function show(el: HTMLElement, instant: boolean): void {
 	if (targets.get(el) === true) return;
 	targets.set(el, true);
 	animations.get(el)?.stop();
@@ -46,7 +46,7 @@ function show(el: HTMLElement): void {
 	el.removeAttribute("inert");
 	el.removeAttribute("aria-hidden");
 
-	const duration = effectiveDuration();
+	const duration = instant ? 0 : effectiveDuration();
 	if (duration === 0) {
 		el.style.opacity = "";
 		return;
@@ -61,7 +61,7 @@ function show(el: HTMLElement): void {
 	animations.set(el, anim);
 }
 
-function hide(el: HTMLElement): void {
+function hide(el: HTMLElement, instant: boolean): void {
 	if (targets.get(el) === false) return;
 	targets.set(el, false);
 	animations.get(el)?.stop();
@@ -69,7 +69,7 @@ function hide(el: HTMLElement): void {
 	el.setAttribute("inert", "");
 	el.setAttribute("aria-hidden", "true");
 
-	const duration = effectiveDuration();
+	const duration = instant ? 0 : effectiveDuration();
 	if (duration === 0) {
 		el.style.opacity = "";
 		el.style.display = "none";
@@ -93,7 +93,12 @@ function hide(el: HTMLElement): void {
 	);
 }
 
-export function setVisibility(el: HTMLElement, visible: boolean): void {
-	if (visible) show(el);
-	else hide(el);
+export function setVisibility(
+	el: HTMLElement,
+	visible: boolean,
+	options?: { instant?: boolean },
+): void {
+	const instant = options?.instant === true;
+	if (visible) show(el, instant);
+	else hide(el, instant);
 }
