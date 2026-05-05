@@ -87,6 +87,39 @@ function applyFormError(form: HTMLFormElement, error: unknown): void {
   });
 }
 
+function collectShadowFields(root: ParentNode, formData: FormData): void {
+  root.querySelectorAll<HTMLElement>("*").forEach((el) => {
+    if (!el.shadowRoot) return;
+    el.shadowRoot
+      .querySelectorAll<
+        HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
+      >("input[name], select[name], textarea[name]")
+      .forEach((field) => {
+        if (
+          field instanceof HTMLInputElement &&
+          (field.type === "checkbox" || field.type === "radio") &&
+          !field.checked
+        ) {
+          return;
+        }
+        if (field instanceof HTMLInputElement && field.type === "file") {
+          for (const file of field.files ?? []) {
+            formData.append(field.name, file);
+          }
+          return;
+        }
+        if (field instanceof HTMLSelectElement && field.multiple) {
+          Array.from(field.selectedOptions).forEach((opt) => {
+            formData.append(field.name, opt.value);
+          });
+          return;
+        }
+        formData.append(field.name, field.value);
+      });
+    collectShadowFields(el.shadowRoot, formData);
+  });
+}
+
 function bindFieldClearOnInput(form: HTMLFormElement): void {
   if (form.__ggFormErrorBound) return;
   form.__ggFormErrorBound = true;
@@ -131,6 +164,7 @@ async function handleSubmit<TContext>(
   clearFormErrors(form);
 
   const formData = new FormData(form);
+  collectShadowFields(form, formData);
   const params = getParams();
 
   const submitControls = form.querySelectorAll<HTMLElement>(
