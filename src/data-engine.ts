@@ -53,6 +53,54 @@ function populateFormFields(root: Element, record: DataRecord): void {
     });
 }
 
+function renderListItems(
+  container: Element,
+  template: Element,
+  items: unknown[],
+): void {
+  if (template instanceof HTMLElement) template.style.display = "none";
+
+  Array.from(container.children).forEach((child) => {
+    if (child !== template) child.remove();
+  });
+
+  items.forEach((item) => {
+    const clone = template.cloneNode(true) as HTMLElement;
+    clone.removeAttribute(ATTR.listTemplate);
+    const record = (item ?? {}) as DataRecord;
+    if (clone instanceof HTMLButtonElement) {
+      clone.setAttribute(ATTR.querySet, `modal:view,id:${record.id}`);
+    }
+    if (record?.id != null) clone.id = String(record.id);
+    clone.__ggRecord = record;
+    populateFields(clone, record);
+    applySwitchFields(clone, record);
+    populateFieldLists(clone, record);
+    container.appendChild(clone);
+    setVisibility(clone, true);
+    emitDataReady(clone, record);
+  });
+}
+
+function populateFieldLists(root: Element, record: DataRecord): void {
+  root.querySelectorAll<HTMLElement>(SEL.fieldList).forEach((el) => {
+    if (el.closest(SEL.listTemplate)) return;
+
+    const path = el.getAttribute(ATTR.fieldList);
+    if (!path) return;
+    const value = getPath(record, path);
+    if (!Array.isArray(value)) return;
+
+    const template = el.querySelector(SEL.listTemplate);
+    if (!template) {
+      console.warn(`[gg-field-list] no [${ATTR.listTemplate}] inside "${path}"`);
+      return;
+    }
+
+    renderListItems(el, template, value);
+  });
+}
+
 export async function executeQuery<TContext>(
   id: string,
   deps: DataEngineDeps<TContext>,
@@ -126,26 +174,7 @@ async function handleQuery<TContext>(
       return;
     }
 
-    if (template instanceof HTMLElement) template.style.display = "none";
-
-    Array.from(container.children).forEach((child) => {
-      if (child !== template) child.remove();
-    });
-
-    result.forEach((record: DataRecord) => {
-      const clone = template.cloneNode(true) as HTMLElement;
-      clone.removeAttribute(ATTR.listTemplate);
-      if (clone instanceof HTMLButtonElement) {
-        clone.setAttribute(ATTR.querySet, `modal:view,id:${record.id}`);
-      }
-      if (record?.id != null) clone.id = String(record.id);
-      clone.__ggRecord = record;
-      populateFields(clone, record);
-      applySwitchFields(clone, record);
-      container.appendChild(clone);
-      setVisibility(clone, true);
-      emitDataReady(clone, record);
-    });
+    renderListItems(container, template, result);
   } else if (kind === "form") {
     if (Array.isArray(result)) {
       console.warn(
@@ -170,6 +199,7 @@ async function handleQuery<TContext>(
     container.__ggRecord = record;
     populateFields(container, record);
     applySwitchFields(container, record);
+    populateFieldLists(container, record);
     emitDataReady(container, record);
   }
 }

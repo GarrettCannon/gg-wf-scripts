@@ -15,6 +15,7 @@ export const ATTR = {
   dataForm: "gg-data-form",
   dataOn: "gg-data-on",
   field: "gg-field",
+  fieldList: "gg-field-list",
   listTemplate: "gg-list-template",
 
   // Form errors
@@ -55,6 +56,7 @@ export const SEL = {
   dataForm: `[${ATTR.dataForm}]`,
   dataAny: `[${ATTR.data}], [${ATTR.dataList}], [${ATTR.dataForm}]`,
   field: `[${ATTR.field}]`,
+  fieldList: `[${ATTR.fieldList}]`,
   listTemplate: `[${ATTR.listTemplate}]`,
   switchState: `[${ATTR.switchState}]`,
   switchField: `[${ATTR.switchField}]`,

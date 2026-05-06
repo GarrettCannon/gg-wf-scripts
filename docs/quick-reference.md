@@ -11,7 +11,8 @@ Every `gg-*` attribute the library reads or writes, what reads it, and what shap
 | `gg-data-form="<id>"` | `<form>` or container | reads | Runs query `<id>`, expects single object. Pre-fills inputs by `name`. |
 | `gg-data-on="<key>,..."` | same as above | reads | Re-runs the query whenever any listed URL param changes. Per-instance override of `addQuery(id, fn, { on: [...] })`. |
 | `gg-field="<dot.path>"` | descendant | writes `textContent` | Set from the parent record. Skipped if the path resolves to `null`/`undefined`. |
-| `gg-list-template` | child of `gg-data-list` | — | The template element to clone per record. The original stays in the DOM (hidden via the engine). |
+| `gg-field-list="<dot.path>"` | descendant of `gg-data` | reads | Clones `[gg-list-template]` per item in the array at `<dot.path>` on the parent record. Same per-row population as `gg-data-list`, sourced from a sibling record field. Composes recursively. |
+| `gg-list-template` | child of `gg-data-list` or `gg-field-list` | — | The template element to clone per record. The original stays in the DOM (hidden via the engine). |
 
 **Record shape:** plain object. Dot-paths are split by `.` and walked with `getPath`. Arrays for `gg-data` or `gg-data-form` produce a `console.warn`.
 
