@@ -1,7 +1,7 @@
 import type { ActionEngineDeps } from "./engine-deps.js";
+import type { ActionResult } from "./actions.js";
 import { ATTR, SEL } from "./attrs.js";
 import { runHandler } from "./helpers/run-handler.js";
-import { runWithLoading } from "./helpers/run-with-loading.js";
 import { getParams } from "./query-params.js";
 
 type ActionData = Record<string, unknown>;
@@ -29,6 +29,52 @@ function findRecord(el: Element): ActionData | null {
   return null;
 }
 
+export async function executeAction<TContext>(
+  id: string,
+  data: ActionData,
+  deps: ActionEngineDeps<TContext>,
+  trigger?: Element,
+): Promise<ActionResult> {
+  const params = getParams();
+  const fields: Record<string, unknown> = {
+    data,
+    params: Object.fromEntries(params),
+  };
+  if (trigger) fields.trigger = trigger;
+
+  const action = deps.actions[id];
+  if (!action) {
+    const error = new Error(`no action registered for "${id}"`);
+    console.warn(`[gg-action] no action registered for "${id}"`);
+    deps.emitError({ prefix: "[gg-action]", id, error, fields });
+    return { ok: false, error };
+  }
+
+  const result = await runHandler(
+    {
+      prefix: "[gg-action]",
+      id,
+      fields,
+      debug: deps.debug,
+      emitError: deps.emitError,
+      loading: trigger ? [trigger] : undefined,
+    },
+    () => action(deps.context, data, params),
+  );
+
+  if (!result.ok) return { ok: false, error: result.error };
+
+  const failure = result.value as { ok?: boolean; error?: unknown } | undefined;
+  if (failure?.ok === false) {
+    const error = failure.error ?? "unknown error";
+    console.warn(`[gg-action] "${id}" failed:`, error);
+    deps.emitError({ prefix: "[gg-action]", id, error, fields });
+    return { ok: false, error };
+  }
+
+  return { ok: true };
+}
+
 async function handleAction<TContext>(
   el: Element,
   deps: ActionEngineDeps<TContext>,
@@ -37,17 +83,6 @@ async function handleAction<TContext>(
 
   const id = el.getAttribute(ATTR.action);
   if (!id) return;
-  const action = deps.actions[id];
-  if (!action) {
-    console.warn(`[gg-action] no action registered for "${id}"`);
-    deps.emitError({
-      prefix: "[gg-action]",
-      id,
-      error: "no action registered",
-      fields: { trigger: el },
-    });
-    return;
-  }
 
   if (el.hasAttribute(ATTR.confirm)) {
     const text = el.getAttribute(ATTR.confirmText) || "Are you sure?";
@@ -57,35 +92,8 @@ async function handleAction<TContext>(
   const record = findRecord(el);
   const explicit = parseActionData(el);
   const data = record ? { ...record, ...explicit } : explicit;
-  const params = getParams();
 
-  const result = await runWithLoading([el], () =>
-    runHandler(
-      {
-        prefix: "[gg-action]",
-        id,
-        fields: { trigger: el, data, params: Object.fromEntries(params) },
-        debug: deps.debug,
-        emitError: deps.emitError,
-      },
-      () => action(deps.context, data, params),
-    ),
-  );
-
-  if (!result.ok) return;
-  if (result.value && (result.value as { ok?: boolean }).ok === false) {
-    const failure = result.value as { error?: unknown };
-    console.warn(
-      `[gg-action] "${id}" failed:`,
-      failure.error ?? "unknown error",
-    );
-    deps.emitError({
-      prefix: "[gg-action]",
-      id,
-      error: failure.error ?? "unknown error",
-      fields: { trigger: el, data },
-    });
-  }
+  await executeAction(id, data, deps, el);
 }
 
 export function initActionEngine<TContext>(

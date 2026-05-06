@@ -2,7 +2,7 @@
 
 Three registration methods, each keyed by the string id you reference from your markup. All three accept optional type parameters so you can pin the result/data shape at the call site for autocomplete inside the handler.
 
-## `app.addQuery(id, fn)`
+## `app.addQuery(id, fn, opts?)`
 
 Register a data query.
 
@@ -23,6 +23,23 @@ Return:
 
 - A single object (or `null`) for use with `gg-data` or `gg-data-form`
 - An array for use with `gg-data-list`
+
+### Re-running on URL changes
+
+Pass `opts.on` to list URL query-param keys that should rerun this query whenever any of them change:
+
+```js
+app.addQuery("posts_list", async ({ sb }, params) => {
+  const q = params.get("q") ?? "";
+  const { data } = await sb
+    .from("posts")
+    .select("*")
+    .ilike("title", `%${q}%`);
+  return data ?? [];
+}, { on: ["q"] });
+```
+
+This is equivalent to putting `gg-data-on="q"` on every container that uses `posts_list`, but declared next to the handler so it can't drift from the markup. A `gg-data-on` attribute on a specific container still wins as a per-instance override.
 
 ### Typed result
 

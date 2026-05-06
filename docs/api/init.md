@@ -1,6 +1,6 @@
 # `init(options)`
 
-Returns an app instance with `addQuery`, `addAction`, `addFormAction`, `onError`, `start`, and `dispose` methods.
+Returns an app instance with `addQuery`, `addAction`, `addFormAction`, `runQuery`, `runAction`, `onError`, `start`, and `dispose` methods.
 
 ```js
 import { init } from "gg-wf-scripts";
@@ -63,6 +63,29 @@ app.start();
 ```
 
 Engines also pick up elements inserted **after** `start()` — Webflow IX-driven content, CMS templates, or anything appended at runtime — via a shared `MutationObserver`. You don't need to re-run `start()`.
+
+## `app.runQuery(id)`
+
+Run a registered query imperatively. Useful from custom code (React islands, web components) that wants to reuse a handler the `gg-data*` engine already runs. Goes through the same logging and error path: debug logs fire when `init({ debug: true })` was passed, and any throw is reported via `app.onError` before being re-thrown to the caller.
+
+```js
+const posts = await app.runQuery("posts_list");
+```
+
+Reads the current URL's `URLSearchParams`, same as the engine. To run with different params, call `setQueryParams(...)` first. The escape hatch `app.queries[id].handler(app.context, params)` calls the raw handler with no logging or error routing.
+
+## `app.runAction(id, data?)`
+
+Run a registered action imperatively. Same logging and error path as the `gg-action` engine — debug logs fire, throws are caught, and `{ ok: false }` returns are routed through `app.onError` (matching what happens when the engine fires the action via a click).
+
+```js
+const result = await app.runAction("delete_post", { id: "abc" });
+if (!result.ok) {
+  // result.error is whatever the handler returned/threw
+}
+```
+
+Returns `{ ok: boolean, error? }`. URL params are read the same way as the engine; pass `data` for the second action argument.
 
 ## `app.onError(handler)`
 

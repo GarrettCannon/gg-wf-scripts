@@ -5,11 +5,8 @@ type QueryChangeCallback = (key: string, value: string | null) => void;
 
 const subscribers: QueryChangeCallback[] = [];
 
-/**
- * Snapshot of the current URL query string as a URLSearchParams instance.
- */
 export function getParams(): URLSearchParams {
-  return new URL(window.location.href).searchParams;
+  return new URLSearchParams(window.location.search);
 }
 
 export function onQueryChanged(callback: QueryChangeCallback): () => void {
@@ -144,8 +141,14 @@ function setupQueryBindInput(el: BindableInput): void {
   });
 
   // When the URL changes from elsewhere (back button, programmatic), mirror
-  // it into the input without re-firing the input listener.
-  onQueryChanged((changedKey, value) => {
+  // it into the input without re-firing the input listener. Self-unsubscribe
+  // once the input is detached so the subscriber list doesn't grow unbounded
+  // across mount/unmount cycles.
+  const unsub = onQueryChanged((changedKey, value) => {
+    if (!el.isConnected) {
+      unsub();
+      return;
+    }
     if (changedKey !== key) return;
     const next = value ?? "";
     if (el.value === next) return;

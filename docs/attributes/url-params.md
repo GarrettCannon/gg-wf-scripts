@@ -25,14 +25,20 @@ Mirror an input's value into a URL param as the user types. Empty value removes 
 <input gg-query-bind="q" gg-query-debounce="300" placeholder="Search..." />
 ```
 
-Combine with `gg-data-on` to re-run a query as the user types:
+Combine with a query that declares its URL deps to re-run as the user types — pass `{ on: ["q"] }` at registration so the markup doesn't have to know:
+
+```js
+app.addQuery("search_posts", searchPosts, { on: ["q"] });
+```
 
 ```html
 <input gg-query-bind="q" gg-query-debounce="300" />
 
-<ul gg-data-list="search_posts" gg-data-on="q">
+<ul gg-data-list="search_posts">
   <li gg-list-template><span gg-field="title"></span></li>
 </ul>
 ```
+
+`gg-data-on="q"` on the container does the same thing and is a per-instance override; see [Data › Re-running on URL changes](/attributes/data#re-running-on-url-changes).
 
 See also: [`setQueryParams` / `removeQueryParams`](/api/exports) for programmatic use from inside an action or query handler.

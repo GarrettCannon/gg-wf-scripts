@@ -6,23 +6,15 @@ type RunHandlerOptions = {
   fields: Record<string, unknown>;
   debug: boolean;
   emitError?: (event: GgErrorEvent) => void;
+  loading?: Iterable<Element>;
 };
 
 export type RunHandlerResult<T> =
   | { ok: true; value: T }
   | { ok: false; error: unknown };
 
-/**
- * Run a registered handler with debug logging and errors-as-values.
- *
- * Catches throws so engine code can branch on a result instead of try/catch.
- * On success, returns { ok: true, value } where value is whatever the handler
- * returned. On throw, returns { ok: false, error }, logs the error, and emits
- * a GgErrorEvent so consumers subscribed via app.onError() can ship it to
- * their error tracker.
- */
 export async function runHandler<T>(
-  { prefix, id, fields, debug, emitError }: RunHandlerOptions,
+  { prefix, id, fields, debug, emitError, loading }: RunHandlerOptions,
   fn: () => Promise<T> | T,
 ): Promise<RunHandlerResult<T>> {
   if (debug) {
@@ -31,6 +23,8 @@ export async function runHandler<T>(
       console.log(`${key}:`, value);
     }
   }
+  const targets = loading ? [...loading] : [];
+  targets.forEach(applyLoading);
   const startedAt = debug ? performance.now() : 0;
   try {
     const value = await fn();
@@ -44,6 +38,21 @@ export async function runHandler<T>(
     emitError?.({ prefix, id, error, fields });
     return { ok: false, error };
   } finally {
+    targets.forEach(clearLoading);
     if (debug) console.groupEnd();
+  }
+}
+
+function applyLoading(el: Element): void {
+  el.setAttribute("gg-loading", "true");
+  if (el instanceof HTMLButtonElement || el instanceof HTMLInputElement) {
+    el.disabled = true;
+  }
+}
+
+function clearLoading(el: Element): void {
+  el.removeAttribute("gg-loading");
+  if (el instanceof HTMLButtonElement || el instanceof HTMLInputElement) {
+    el.disabled = false;
   }
 }

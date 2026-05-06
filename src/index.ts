@@ -1,7 +1,9 @@
-import type { Query } from "./queries.js";
-import type { Action } from "./actions.js";
+import type { Query, RegisteredQuery } from "./queries.js";
+import type { Action, ActionResult } from "./actions.js";
 import type { FormAction } from "./form-actions.js";
 import { setQueryParams, removeQueryParams, initQueryParams } from "./query-params.js";
+import { executeQuery } from "./data-engine.js";
+import { executeAction } from "./action-engine.js";
 import { initAuth, type AuthAdapter } from "./auth.js";
 import { initAuthEngine } from "./auth-engine.js";
 import { initSwitchEngine } from "./switch-engine.js";
@@ -19,7 +21,7 @@ import { createErrorBus, type ErrorHandler, type GgErrorEvent } from "./errors.j
 export { setQueryParams, removeQueryParams };
 export { getPath } from "./helpers/path.js";
 export type { AuthAdapter } from "./auth.js";
-export type { Query } from "./queries.js";
+export type { Query, RegisteredQuery } from "./queries.js";
 export type { Action, ActionResult } from "./actions.js";
 export type { FormAction, FormActionResult, FormFieldError } from "./form-actions.js";
 export type { GgErrorEvent, ErrorHandler } from "./errors.js";
@@ -59,28 +61,27 @@ export type InitOptions<TContext = unknown> = {
 export type App<TContext = unknown> = {
   context: TContext;
   debug: boolean;
-  queries: Record<string, Query<TContext>>;
+  queries: Record<string, RegisteredQuery<TContext>>;
   actions: Record<string, Action<TContext>>;
   formActions: Record<string, FormAction<TContext>>;
 
-  /**
-   * Register a query. Optionally pin the result type at the call site:
-   * `app.addQuery<User[]>("users.list", ...)` for autocomplete on the
-   * handler's return value.
-   */
   addQuery: <TResult = unknown>(
     id: string,
     fn: Query<TContext, TResult>,
+    opts?: { on?: string[] },
   ) => void;
-  /**
-   * Register an action. Optionally pin the data shape:
-   * `app.addAction<{ id: string }>("posts.delete", ...)`.
-   */
   addAction: <TData extends Record<string, unknown> = Record<string, unknown>>(
     id: string,
     fn: Action<TContext, TData>,
   ) => void;
   addFormAction: (id: string, fn: FormAction<TContext>) => void;
+
+  runQuery: <TResult = unknown>(id: string) => Promise<TResult>;
+
+  runAction: <TData extends Record<string, unknown> = Record<string, unknown>>(
+    id: string,
+    data?: TData,
+  ) => Promise<ActionResult>;
 
   /**
    * Subscribe to errors from any registered handler — including thrown
@@ -116,7 +117,7 @@ export function init<TContext = unknown>(
   }: InitOptions<TContext> = {},
 ): App<TContext> {
   if (transition) setTransitionConfig(transition);
-  const queries: Record<string, Query<TContext>> = {};
+  const queries: Record<string, RegisteredQuery<TContext>> = {};
   const actions: Record<string, Action<TContext>> = {};
   const formActions: Record<string, FormAction<TContext>> = {};
   const errorBus = createErrorBus();
@@ -129,8 +130,8 @@ export function init<TContext = unknown>(
     queries,
     actions,
     formActions,
-    addQuery: (id, fn) => {
-      queries[id] = fn as Query<TContext>;
+    addQuery: (id, fn, opts) => {
+      queries[id] = { handler: fn as Query<TContext>, on: opts?.on };
     },
     addAction: (id, fn) => {
       actions[id] = fn as Action<TContext>;
@@ -138,6 +139,28 @@ export function init<TContext = unknown>(
     addFormAction: (id, fn) => {
       formActions[id] = fn;
     },
+    runQuery: async <TResult = unknown>(id: string): Promise<TResult> => {
+      const result = await executeQuery(id, {
+        context,
+        debug,
+        queries,
+        emitError: (e) => errorBus.emit(e),
+      });
+      if (!result.ok) throw result.error;
+      return result.value as TResult;
+    },
+    runAction: <
+      TData extends Record<string, unknown> = Record<string, unknown>,
+    >(
+      id: string,
+      data: TData = {} as TData,
+    ): Promise<ActionResult> =>
+      executeAction(id, data, {
+        context,
+        debug,
+        actions,
+        emitError: (e) => errorBus.emit(e),
+      }),
     onError: (handler) => errorBus.subscribe(handler),
     start() {
       function run() {

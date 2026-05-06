@@ -4,7 +4,6 @@ import { ATTR, SEL } from "./attrs.js";
 import { populateFields } from "./helpers/dom.js";
 import { findInputs } from "./helpers/form-field.js";
 import { runHandler } from "./helpers/run-handler.js";
-import { runWithLoading } from "./helpers/run-with-loading.js";
 import { onElement } from "./dom-observer.js";
 import { getParams } from "./query-params.js";
 
@@ -171,21 +170,20 @@ async function handleSubmit<TContext>(
     'button[type="submit"], button:not([type]), input[type="submit"]',
   );
 
-  const handlerResult = await runWithLoading([form, ...submitControls], () =>
-    runHandler(
-      {
-        prefix: "[gg-form-action]",
-        id,
-        fields: {
-          form,
-          formData: Object.fromEntries(formData),
-          params: Object.fromEntries(params),
-        },
-        debug: deps.debug,
-        emitError: deps.emitError,
+  const handlerResult = await runHandler(
+    {
+      prefix: "[gg-form-action]",
+      id,
+      fields: {
+        form,
+        formData: Object.fromEntries(formData),
+        params: Object.fromEntries(params),
       },
-      () => action(deps.context, formData, params),
-    ),
+      debug: deps.debug,
+      emitError: deps.emitError,
+      loading: [form, ...submitControls],
+    },
+    () => action(deps.context, formData, params),
   );
 
   if (!handlerResult.ok) {

@@ -62,12 +62,27 @@ if (form.__ggRecord) hydrate(form.__ggRecord); // already populated
 The event bubbles, so listeners on one form/container never fire for another. From inside a shadow root, the host element's parent chain is unreachable via `closest()` directly — walk out with `getRootNode().host` first.
 
 ::: tip
-If the component re-runs its own search query against the library, it can call any registered query imperatively via `app.queries[id](app.context, params)`. The library exposes the `App` as `window.ggApp` automatically (and dispatches a `gg-app-ready` event on `document` with `detail.app`), so custom-code components can reach it without any plumbing. Pass `expose: false` to `init()` to opt out.
+If the component re-runs its own search query against the library, it can call any registered query imperatively via `app.runQuery(id)`. This goes through the same logging/error path as the `gg-data*` engine — debug logs fire and any throw is routed through `app.onError` before being re-thrown to the caller. Params come from the current URL, same as the engine. For an escape hatch that skips logging, `app.queries[id].handler(app.context, params)` calls the raw handler directly. The library exposes the `App` as `window.ggApp` automatically (and dispatches a `gg-app-ready` event on `document` with `detail.app`), so custom-code components can reach it without any plumbing. Pass `expose: false` to `init()` to opt out.
 :::
 
 ## Re-running on URL changes
 
-Add `gg-data-on` to re-run a query when specific URL params change:
+The cleanest place to declare which URL params should rerun a query is at registration via `opts.on` — that way the dependency lives next to the handler and can't drift from the markup:
+
+```js
+app.addQuery("post_by_id", async ({ sb }, params) => {
+  const { data } = await sb.from("posts").select("*").eq("id", params.get("id")).single();
+  return data;
+}, { on: ["id"] });
+```
+
+```html
+<div gg-data="post_by_id">
+  <h1 gg-field="title"></h1>
+</div>
+```
+
+If you need to override the rerun list on a specific instance — or you'd rather declare it on the markup — `gg-data-on` does the same thing and takes precedence:
 
 ```html
 <div gg-data="post_by_id" gg-data-on="id">
@@ -77,10 +92,18 @@ Add `gg-data-on` to re-run a query when specific URL params change:
 
 Combine with `gg-query-bind` (see [URL params](/attributes/url-params)) to drive live search:
 
+```js
+app.addQuery("search_posts", async ({ sb }, params) => {
+  const q = params.get("q") ?? "";
+  const { data } = await sb.from("posts").select("*").ilike("title", `%${q}%`);
+  return data ?? [];
+}, { on: ["q"] });
+```
+
 ```html
 <input gg-query-bind="q" gg-query-debounce="300" />
 
-<ul gg-data-list="search_posts" gg-data-on="q">
+<ul gg-data-list="search_posts">
   <li gg-list-template><span gg-field="title"></span></li>
 </ul>
 ```

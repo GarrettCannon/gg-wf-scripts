@@ -1,5 +1,5 @@
 import type { GgErrorEvent } from "./errors.js";
-import type { Query } from "./queries.js";
+import type { RegisteredQuery } from "./queries.js";
 import type { Action } from "./actions.js";
 import type { FormAction } from "./form-actions.js";
 
@@ -15,7 +15,7 @@ export type EngineCore<TContext> = {
 };
 
 export type DataEngineDeps<TContext> = EngineCore<TContext> & {
-  queries: Record<string, Query<TContext>>;
+  queries: Record<string, RegisteredQuery<TContext>>;
 };
 
 export type ActionEngineDeps<TContext> = EngineCore<TContext> & {

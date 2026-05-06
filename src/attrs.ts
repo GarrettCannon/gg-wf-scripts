@@ -54,7 +54,6 @@ export const SEL = {
   dataList: `[${ATTR.dataList}]`,
   dataForm: `[${ATTR.dataForm}]`,
   dataAny: `[${ATTR.data}], [${ATTR.dataList}], [${ATTR.dataForm}]`,
-  dataAnyOn: `[${ATTR.data}][${ATTR.dataOn}], [${ATTR.dataList}][${ATTR.dataOn}], [${ATTR.dataForm}][${ATTR.dataOn}]`,
   field: `[${ATTR.field}]`,
   listTemplate: `[${ATTR.listTemplate}]`,
   switchState: `[${ATTR.switchState}]`,

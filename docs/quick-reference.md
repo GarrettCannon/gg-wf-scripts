@@ -9,7 +9,7 @@ Every `gg-*` attribute the library reads or writes, what reads it, and what shap
 | `gg-data="<id>"` | container | reads | Runs query `<id>`, expects single object. Populates `[gg-field]` and `[gg-switch-field]` descendants. |
 | `gg-data-list="<id>"` | container | reads | Runs query `<id>`, expects array. Clones `[gg-list-template]` per record. |
 | `gg-data-form="<id>"` | `<form>` or container | reads | Runs query `<id>`, expects single object. Pre-fills inputs by `name`. |
-| `gg-data-on="<key>,..."` | same as above | reads | Re-runs the query whenever any listed URL param changes. |
+| `gg-data-on="<key>,..."` | same as above | reads | Re-runs the query whenever any listed URL param changes. Per-instance override of `addQuery(id, fn, { on: [...] })`. |
 | `gg-field="<dot.path>"` | descendant | writes `textContent` | Set from the parent record. Skipped if the path resolves to `null`/`undefined`. |
 | `gg-list-template` | child of `gg-data-list` | — | The template element to clone per record. The original stays in the DOM (hidden via the engine). |
 

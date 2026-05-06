@@ -8,8 +8,7 @@ import {
 } from "./helpers/dom.js";
 import { setVisibility } from "./helpers/visibility.js";
 import { writeField } from "./helpers/form-field.js";
-import { runHandler } from "./helpers/run-handler.js";
-import { runWithLoading } from "./helpers/run-with-loading.js";
+import { runHandler, type RunHandlerResult } from "./helpers/run-handler.js";
 import { onElement } from "./dom-observer.js";
 import { onQueryChanged, getParams } from "./query-params.js";
 
@@ -54,46 +53,68 @@ function populateFormFields(root: Element, record: DataRecord): void {
     });
 }
 
-async function runQuery<TContext>(
+export async function executeQuery<TContext>(
+  id: string,
+  deps: DataEngineDeps<TContext>,
+  container?: Element,
+): Promise<RunHandlerResult<unknown>> {
+  const params = getParams();
+  const fields: Record<string, unknown> = {
+    params: Object.fromEntries(params),
+  };
+  if (container) fields.container = container;
+
+  const registered = deps.queries[id];
+  if (!registered) {
+    const error = new Error(`no query registered for "${id}"`);
+    console.warn(`[gg-data] no query registered for "${id}"`);
+    deps.emitError({ prefix: "[gg-data]", id, error, fields });
+    return { ok: false, error };
+  }
+
+  return runHandler(
+    {
+      prefix: "[gg-data]",
+      id,
+      fields,
+      debug: deps.debug,
+      emitError: deps.emitError,
+      loading: container ? [container] : undefined,
+    },
+    () => registered.handler(deps.context, params),
+  );
+}
+
+type DataKind = "list" | "form" | "single";
+
+function getDataBinding(
+  el: Element,
+): { id: string; kind: DataKind } | null {
+  for (const [attr, kind] of [
+    [ATTR.dataList, "list"],
+    [ATTR.dataForm, "form"],
+    [ATTR.data, "single"],
+  ] as const) {
+    const id = el.getAttribute(attr);
+    if (id) return { id, kind };
+  }
+  return null;
+}
+
+async function handleQuery<TContext>(
   container: Element,
   deps: DataEngineDeps<TContext>,
 ): Promise<void> {
-  const isList = container.hasAttribute(ATTR.dataList);
-  const isForm = container.hasAttribute(ATTR.dataForm);
-  const id = container.getAttribute(
-    isList ? ATTR.dataList : isForm ? ATTR.dataForm : ATTR.data,
-  );
-  if (!id) return;
-  const query = deps.queries[id];
-  if (!query) {
-    console.warn(`[gg-data] no query registered for "${id}"`);
-    deps.emitError({
-      prefix: "[gg-data]",
-      id,
-      error: "no query registered",
-      fields: { container },
-    });
-    return;
-  }
+  const binding = getDataBinding(container);
+  if (!binding) return;
+  const { id, kind } = binding;
 
-  const params = getParams();
-  const handlerResult = await runWithLoading([container], () =>
-    runHandler(
-      {
-        prefix: "[gg-data]",
-        id,
-        fields: { container, params: Object.fromEntries(params) },
-        debug: deps.debug,
-        emitError: deps.emitError,
-      },
-      () => query(deps.context, params),
-    ),
-  );
+  const handlerResult = await executeQuery(id, deps, container);
   if (!handlerResult.ok) return;
   const result = handlerResult.value;
   if (result === undefined) return;
 
-  if (isList) {
+  if (kind === "list") {
     if (!Array.isArray(result)) {
       console.warn(`[gg-data-list] query "${id}" did not return an array`);
       return;
@@ -125,7 +146,7 @@ async function runQuery<TContext>(
       setVisibility(clone, true);
       emitDataReady(clone, record);
     });
-  } else if (isForm) {
+  } else if (kind === "form") {
     if (Array.isArray(result)) {
       console.warn(
         `[gg-data-form] query "${id}" returned an array; expected a single record`,
@@ -160,15 +181,19 @@ export function initDataEngine<TContext>(
   const unbind = onElement(SEL.dataAny, (el) => {
     if (seen.has(el)) return;
     seen.add(el);
-    runQuery(el, deps);
+    handleQuery(el, deps);
   });
 
   const unsubscribe = onQueryChanged((key) => {
-    document.querySelectorAll(SEL.dataAnyOn).forEach((c) => {
+    document.querySelectorAll(SEL.dataAny).forEach((c) => {
+      const binding = getDataBinding(c);
+      if (!binding) return;
       const attr = c.getAttribute(ATTR.dataOn);
-      if (!attr) return;
-      const keys = attr.split(",").map((s) => s.trim());
-      if (keys.includes(key)) runQuery(c, deps);
+      const keys = attr
+        ? attr.split(",").map((s) => s.trim())
+        : deps.queries[binding.id]?.on;
+      if (!keys?.includes(key)) return;
+      handleQuery(c, deps);
     });
   });
 
