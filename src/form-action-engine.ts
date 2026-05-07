@@ -86,6 +86,22 @@ function applyFormError(form: HTMLFormElement, error: unknown): void {
   });
 }
 
+function formDataToObject(
+  formData: FormData,
+): Record<string, FormDataEntryValue | FormDataEntryValue[]> {
+  const out: Record<string, FormDataEntryValue | FormDataEntryValue[]> = {};
+  for (const [key, value] of formData) {
+    if (key in out) {
+      const existing = out[key];
+      if (Array.isArray(existing)) existing.push(value);
+      else out[key] = [existing as FormDataEntryValue, value];
+    } else {
+      out[key] = value;
+    }
+  }
+  return out;
+}
+
 function collectShadowFields(root: ParentNode, formData: FormData): void {
   root.querySelectorAll<HTMLElement>("*").forEach((el) => {
     if (!el.shadowRoot) return;
@@ -176,7 +192,7 @@ async function handleSubmit<TContext>(
       id,
       fields: {
         form,
-        formData: Object.fromEntries(formData),
+        formData: formDataToObject(formData),
         params: Object.fromEntries(params),
       },
       debug: deps.debug,
