@@ -128,6 +128,7 @@ export async function executeQuery<TContext>(
       debug: deps.debug,
       emitError: deps.emitError,
       loading: container ? [container] : undefined,
+      loadingMode: "persistent",
     },
     () => registered.handler(deps.context, params),
   );

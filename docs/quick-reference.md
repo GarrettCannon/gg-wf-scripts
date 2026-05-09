@@ -74,7 +74,7 @@ Every `gg-*` attribute the library reads or writes, what reads it, and what shap
 
 | Attribute | On | Reads / writes | Notes |
 |---|---|---|---|
-| `gg-loading` | trigger / form | written | Set to `"true"` while a handler is in flight. Buttons / inputs also get the native `disabled` attribute. |
+| `gg-loading` | trigger / form / data container | written | `"loading"` or `"refreshing"` while a handler is in flight; `"loaded"` after a successful `gg-data*` query. Buttons / inputs also get the native `disabled` attribute. |
 | `gg-auth` | `<body>` | written | `"true"` when a user is signed in, `"false"` otherwise. |
 | `gg-auth="true"` / `"false"` | any element | reads | Hidden via inline `display: none` when its value doesn't match `body[gg-auth]`. |
 | `gg-role="<role>"` | `<body>` | written | The string returned by `auth.roleQuery`. Removed when no role / signed out. |

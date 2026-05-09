@@ -1,5 +1,7 @@
 import type { GgErrorEvent } from "../errors.js";
 
+type LoadingMode = "transient" | "persistent";
+
 type RunHandlerOptions = {
   prefix: string;
   id: string;
@@ -7,6 +9,7 @@ type RunHandlerOptions = {
   debug: boolean;
   emitError?: (event: GgErrorEvent) => void;
   loading?: Iterable<Element>;
+  loadingMode?: LoadingMode;
 };
 
 export type RunHandlerResult<T> =
@@ -14,7 +17,15 @@ export type RunHandlerResult<T> =
   | { ok: false; error: unknown };
 
 export async function runHandler<T>(
-  { prefix, id, fields, debug, emitError, loading }: RunHandlerOptions,
+  {
+    prefix,
+    id,
+    fields,
+    debug,
+    emitError,
+    loading,
+    loadingMode = "transient",
+  }: RunHandlerOptions,
   fn: () => Promise<T> | T,
 ): Promise<RunHandlerResult<T>> {
   if (debug) {
@@ -24,7 +35,8 @@ export async function runHandler<T>(
     }
   }
   const targets = loading ? [...loading] : [];
-  targets.forEach(applyLoading);
+  const priorStates = targets.map((el) => el.getAttribute("gg-loading"));
+  targets.forEach((el, i) => beginLoading(el, priorStates[i]));
   const startedAt = debug ? performance.now() : 0;
   try {
     const value = await fn();
@@ -32,26 +44,38 @@ export async function runHandler<T>(
       const ms = (performance.now() - startedAt).toFixed(1);
       console.log(`result (${ms}ms):`, value);
     }
+    targets.forEach((el) => endLoading(el, loadingMode, true, null));
     return { ok: true, value };
   } catch (error) {
     console.error(`${prefix} "${id}" threw:`, error);
     emitError?.({ prefix, id, error, fields });
+    targets.forEach((el, i) => endLoading(el, loadingMode, false, priorStates[i]));
     return { ok: false, error };
   } finally {
-    targets.forEach(clearLoading);
     if (debug) console.groupEnd();
   }
 }
 
-function applyLoading(el: Element): void {
-  el.setAttribute("gg-loading", "true");
+function beginLoading(el: Element, prior: string | null): void {
+  el.setAttribute("gg-loading", prior === "loaded" ? "refreshing" : "loading");
   if (el instanceof HTMLButtonElement || el instanceof HTMLInputElement) {
     el.disabled = true;
   }
 }
 
-function clearLoading(el: Element): void {
-  el.removeAttribute("gg-loading");
+function endLoading(
+  el: Element,
+  mode: LoadingMode,
+  ok: boolean,
+  prior: string | null,
+): void {
+  if (mode === "persistent" && ok) {
+    el.setAttribute("gg-loading", "loaded");
+  } else if (mode === "persistent" && prior === "loaded") {
+    el.setAttribute("gg-loading", "loaded");
+  } else {
+    el.removeAttribute("gg-loading");
+  }
   if (el instanceof HTMLButtonElement || el instanceof HTMLInputElement) {
     el.disabled = false;
   }
