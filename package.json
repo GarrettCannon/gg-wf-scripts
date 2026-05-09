@@ -1,6 +1,6 @@
 {
 	"name": "gg-wf-scripts",
-	"version": "7.0.1",
+	"version": "7.1.0",
 	"type": "module",
 	"exports": {
 		".": {

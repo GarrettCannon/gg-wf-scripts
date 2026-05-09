@@ -30,6 +30,7 @@ export const ATTR = {
   switchField: "gg-switch-field",
   switchQuery: "gg-switch-query",
   case: "gg-case",
+  caseDefault: "gg-case-default",
 
   // Visibility
   visibleWhen: "gg-visible-when",

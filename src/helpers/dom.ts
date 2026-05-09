@@ -1,3 +1,4 @@
+import { ATTR } from "../attrs.js";
 import { getPath } from "./path.js";
 import { setVisibility } from "./visibility.js";
 
@@ -43,17 +44,26 @@ function caseMatches(caseAttr: string, state: string): boolean {
  *
  * Comma in state/case = positional AND match. Pipe in a case position = OR
  * alternation within that position.
+ *
+ * [gg-case-default] is a presence-based modifier: a child with that attribute
+ * also shows when the state is empty across every comma-separated segment
+ * (single-key "" or multi-key "," / ",," etc). It can sit alongside [gg-case]
+ * to OR a "nothing selected yet" fallback into the same element.
  */
 export function applySwitchState(
   container: Element,
   options?: { instant?: boolean },
 ): void {
-  const state = container.getAttribute("gg-switch-state") ?? "";
+  const state = container.getAttribute(ATTR.switchState) ?? "";
+  const isEmpty = state.split(",").every((s) => s.trim() === "");
   const instant = options?.instant === true;
   Array.from(container.children).forEach((child) => {
     if (!(child instanceof HTMLElement)) return;
-    const caseAttr = child.getAttribute("gg-case");
-    if (caseAttr == null) return;
-    setVisibility(child, caseMatches(caseAttr, state), { instant });
+    const caseAttr = child.getAttribute(ATTR.case);
+    const isDefault = child.hasAttribute(ATTR.caseDefault);
+    if (caseAttr == null && !isDefault) return;
+    const matchesCase = caseAttr != null && caseMatches(caseAttr, state);
+    const matchesDefault = isDefault && isEmpty;
+    setVisibility(child, matchesCase || matchesDefault, { instant });
   });
 }

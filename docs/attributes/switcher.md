@@ -30,6 +30,27 @@ The switcher walks up the DOM to find the nearest `gg-data` / `gg-data-list` row
 
 `gg-case=""` acts as the default/empty state. It matches when the URL param or field is missing or empty.
 
+For multi-key switches or when you want a default to live on the same element as another case, use `gg-case-default` as a presence-based modifier:
+
+```html
+<div gg-switch-query="sortBy,sortDir">
+  <section gg-case-default>Pick a sort order</section>
+  <section gg-case="date,asc">Date ↑</section>
+  <section gg-case="date,desc">Date ↓</section>
+</div>
+```
+
+`gg-case-default` shows when every comma-separated segment of the state is empty (i.e. all keys are unset or empty). It can be combined with `gg-case` on the same element to OR a "nothing selected yet" fallback into a normal case:
+
+```html
+<div gg-switch-query="view">
+  <section gg-case="edit" gg-case-default>Edit pane</section>
+  <section gg-case="preview">Preview pane</section>
+</div>
+```
+
+Above, the edit pane shows when `?view=edit` is present and also when `view` is absent.
+
 ## Multiple values
 
 Both `gg-switch-query` and `gg-switch-field` accept comma-separated keys / paths. The state becomes the values joined by commas in the same order, and `gg-case` matches positionally (AND).
