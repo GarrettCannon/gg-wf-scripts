@@ -20,6 +20,7 @@ function clearFieldError(form: HTMLFormElement, name: string): void {
 }
 
 function clearFormErrors(form: HTMLFormElement): void {
+  form.removeAttribute(ATTR.formHasError);
   form.querySelectorAll(SEL.formFieldInvalid).forEach((el) => {
     el.removeAttribute(ATTR.formFieldInvalid);
   });
@@ -203,6 +204,7 @@ async function handleSubmit<TContext>(
   );
 
   if (!handlerResult.ok) {
+    form.setAttribute(ATTR.formHasError, "true");
     applyFormError(form, "Something went wrong. Please try again.");
     return;
   }
@@ -216,6 +218,7 @@ async function handleSubmit<TContext>(
     const fieldErrors = Array.isArray(failure.field_errors)
       ? failure.field_errors
       : [];
+    form.setAttribute(ATTR.formHasError, "true");
     applyFieldErrors(form, fieldErrors);
     applyErrorList(form, fieldErrors);
     applyFormError(form, failure.error);

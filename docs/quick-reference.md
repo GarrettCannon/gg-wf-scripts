@@ -35,6 +35,7 @@ Every `gg-*` attribute the library reads or writes, what reads it, and what shap
 | Attribute | On | Reads / writes | Notes |
 |---|---|---|---|
 | `gg-form-action="<id>"` | `<form>` | reads | Overrides submit, runs form action `<id>` with a `FormData` snapshot. |
+| `gg-form-has-error` | `<form>` | written | Set to `"true"` whenever an error is rendered; removed at the start of each submit. Useful as a CSS hook for the error container. |
 | `gg-form-field-invalid` | input/select/textarea | written | Set by the engine after a `field_errors` failure. Cleared on next `input`. |
 | `gg-form-field-error="<name>"` | element | written `textContent` | Receives the message for field `<name>`. |
 | `gg-form-error` | element | written `textContent` | Receives the top-level `error` message. |

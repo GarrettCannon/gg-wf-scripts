@@ -23,6 +23,7 @@ export const ATTR = {
   formFieldInvalid: "gg-form-field-invalid",
   formError: "gg-form-error",
   formErrorList: "gg-form-error-list",
+  formHasError: "gg-form-has-error",
   formScope: "gg-form-scope",
 
   // Switcher

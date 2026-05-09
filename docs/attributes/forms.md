@@ -70,6 +70,7 @@ Markup:
 
 What the engine does:
 
+- Sets `gg-form-has-error="true"` on the `<form>` itself when any error is shown — use it to toggle a wrapper, e.g. `form:not([gg-form-has-error]) .error-banner { display: none; }`.
 - Sets `gg-form-field-invalid="true"` on each invalid input — target with CSS like `input[gg-form-field-invalid="true"] { border-color: red; }`.
 - Sets the `textContent` of `[gg-form-field-error="<name>"]` elements to the matching message.
 - Populates `[gg-form-error-list]` using the same template pattern as `gg-data-list` (clones `[gg-list-template]`, applies `gg-field` bindings).
