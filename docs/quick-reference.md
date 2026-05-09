@@ -24,6 +24,7 @@ Every `gg-*` attribute the library reads or writes, what reads it, and what shap
 |---|---|---|---|
 | `gg-action="<id>"` | any element | reads | On click, runs action `<id>`. Walks ancestors for a `__ggRecord` and merges with `gg-action-data`. |
 | `gg-action-data="k1:v1,k2:v2"` | same element | reads | Inline data merged on top of the parent record. Values are strings. |
+| `gg-action-data-{name}="<value>"` | same element | reads | One attribute per field. Browser lowercases `{name}`. Wins over the csv form on key collisions. |
 | `gg-confirm` | element with `gg-action` or `gg-form-action` | reads | If present, calls `window.confirm()` before firing. |
 | `gg-confirm-text="<msg>"` | same | reads | Confirmation message. Defaults to `"Are you sure?"`. |
 
