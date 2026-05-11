@@ -23,7 +23,7 @@ You configure auth via the `auth` option on `init()`:
 | `auth.onChange` | `(cb: (userId: string \| null) => void) => void` | Subscribe to auth changes. Optional but recommended — without it, `gg-auth` won't update on sign-in/out. |
 | `auth.roleQuery` | `async (context, userId) => string \| null` | Returns the user's role string. Called on every auth change. If omitted, `gg-role` is never set. |
 
-If `getUser` rejects (e.g. an expired Supabase session that can't refresh on a stale tab), the body is set to the signed-out state (`gg-auth="false"`, `gg-role` removed) instead of being left in an undefined state. `onChange` is still wired up, so a later sign-in event can recover. A failing `roleQuery` similarly clears `gg-role` but leaves `gg-auth="true"`.
+If `getUser` rejects or hangs (e.g. an expired Supabase session that can't refresh on a stale tab — `sb.auth.getUser()` can hang indefinitely when the refresh token is unrecoverable), the body is set to the signed-out state (`gg-auth="false"`, `gg-role` removed) instead of being left in an undefined state. `getUser` is raced against a 10s timeout for this reason. `onChange` is still wired up, so a later sign-in event can recover. A failing `roleQuery` similarly clears `gg-role` but leaves `gg-auth="true"`.
 
 ## Example: Supabase
 

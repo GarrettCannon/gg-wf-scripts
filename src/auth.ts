@@ -1,5 +1,7 @@
 import { ATTR } from "./attrs.js";
 
+const GET_USER_TIMEOUT_MS = 10_000;
+
 export type AuthAdapter<TContext = unknown> = {
   getUser: () => string | null | Promise<string | null>;
   onChange?: (cb: (userId: string | null) => void) => void;
@@ -57,7 +59,21 @@ export async function initAuth<TContext>(
   let userId: string | null = null;
   try {
     log("getUser started");
-    userId = (await getUser()) ?? null;
+    // Race against a timeout — a buggy adapter (e.g. Supabase getUser() with an
+    // unrecoverable refresh token) can hang forever and leave the body in an
+    // undefined auth state.
+    userId = await Promise.race([
+      Promise.resolve(getUser()).then((v) => v ?? null),
+      new Promise<null>((_, reject) =>
+        setTimeout(
+          () =>
+            reject(
+              new Error(`getUser timed out after ${GET_USER_TIMEOUT_MS}ms`),
+            ),
+          GET_USER_TIMEOUT_MS,
+        ),
+      ),
+    ]);
     log("getUser →", userId);
   } catch (err) {
     log("getUser threw:", err);
