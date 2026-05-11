@@ -1,6 +1,6 @@
 {
 	"name": "gg-wf-scripts",
-	"version": "8.1.1",
+	"version": "8.1.2",
 	"type": "module",
 	"exports": {
 		".": {
@@ -13,7 +13,8 @@
 	],
 	"scripts": {
 		"clean": "rimraf dist",
-		"build": "npm run clean && tsc",
+		"sync-version": "bash scripts/sync-version.sh",
+		"build": "npm run sync-version && npm run clean && tsc",
 		"typecheck": "tsc --noEmit",
 		"prepublishOnly": "npm run build",
 		"docs:dev": "vitepress dev docs",

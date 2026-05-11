@@ -17,6 +17,9 @@ import { startDomObserver } from "./dom-observer.js";
 import { setTransitionConfig } from "./helpers/visibility.js";
 import type { Easing } from "motion";
 import { createErrorBus, type ErrorHandler, type GgErrorEvent } from "./errors.js";
+import { VERSION } from "./version.js";
+
+export { VERSION } from "./version.js";
 
 export { setQueryParams, removeQueryParams };
 export { getPath } from "./helpers/path.js";
@@ -164,13 +167,14 @@ export function init<TContext = unknown>(
     onError: (handler) => errorBus.subscribe(handler),
     start() {
       function run() {
+        console.log(`[gg-wf-scripts] v${VERSION}`);
         const core = {
           context,
           debug,
           emitError: (event: GgErrorEvent) => errorBus.emit(event),
         };
 
-        if (auth) initAuth(context, auth);
+        if (auth) initAuth(context, auth, debug);
         cleanups.push(startDomObserver());
         cleanups.push(initAuthEngine());
         cleanups.push(initSwitchEngine());
