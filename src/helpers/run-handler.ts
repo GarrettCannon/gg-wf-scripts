@@ -28,12 +28,6 @@ export async function runHandler<T>(
   }: RunHandlerOptions,
   fn: () => Promise<T> | T,
 ): Promise<RunHandlerResult<T>> {
-  if (debug) {
-    console.groupCollapsed(`${prefix} "${id}"`);
-    for (const [key, value] of Object.entries(fields)) {
-      console.log(`${key}:`, value);
-    }
-  }
   const targets = loading ? [...loading] : [];
   const priorStates = targets.map((el) => el.getAttribute("gg-loading"));
   targets.forEach((el, i) => beginLoading(el, priorStates[i]));
@@ -42,17 +36,15 @@ export async function runHandler<T>(
     const value = await fn();
     if (debug) {
       const ms = (performance.now() - startedAt).toFixed(1);
-      console.log(`result (${ms}ms):`, value);
+      console.log(`${prefix} "${id}" (${ms}ms)`, { ...fields, result: value });
     }
     targets.forEach((el) => endLoading(el, loadingMode, true, null));
     return { ok: true, value };
   } catch (error) {
-    console.error(`${prefix} "${id}" threw:`, error);
+    console.error(`${prefix} "${id}" threw:`, { ...fields, error });
     emitError?.({ prefix, id, error, fields });
     targets.forEach((el, i) => endLoading(el, loadingMode, false, priorStates[i]));
     return { ok: false, error };
-  } finally {
-    if (debug) console.groupEnd();
   }
 }
 
