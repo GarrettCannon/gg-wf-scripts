@@ -25,6 +25,8 @@ You configure auth via the `auth` option on `init()`:
 
 If `getUser` rejects or hangs (e.g. an expired Supabase session that can't refresh on a stale tab — `sb.auth.getUser()` can hang indefinitely when the refresh token is unrecoverable), the body is set to the signed-out state (`gg-auth="false"`, `gg-role` removed) instead of being left in an undefined state. `getUser` is raced against a 10s timeout for this reason. `onChange` is still wired up, so a later sign-in event can recover. A failing `roleQuery` similarly clears `gg-role` but leaves `gg-auth="true"`.
 
+The library defers its handling of `onChange` callbacks onto a fresh task (via `setTimeout(..., 0)`), so adapters can invoke `cb` from any call site without worrying about reentrancy. In particular, this is what makes `sb.auth.onAuthStateChange` safe to use directly: that listener fires while Supabase holds an internal auth lock, and `roleQuery` would deadlock if it ran synchronously inside it. Adapter authors don't need to schedule `cb` themselves.
+
 ## Example: Supabase
 
 ```js

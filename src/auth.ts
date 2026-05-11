@@ -83,7 +83,13 @@ export async function initAuth<TContext>(
 
   if (onChange) {
     log("subscribing to onChange");
-    onChange((userId) => applyAuthAttrs(userId ?? null, "onChange"));
+    onChange((userId) => {
+      // Defer out of the caller's stack frame: Supabase's onAuthStateChange
+      // fires while holding an internal auth lock, and any sb.from(...) inside
+      // roleQuery needs that same lock — awaiting synchronously deadlocks.
+      // Microtasks aren't enough; the lock is released after the current task.
+      setTimeout(() => applyAuthAttrs(userId ?? null, "onChange"), 0);
+    });
   } else {
     log("no onChange adapter — gg-auth won't update on later sign-in/out");
   }
