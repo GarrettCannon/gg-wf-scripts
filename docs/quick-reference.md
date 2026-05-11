@@ -69,7 +69,7 @@ Every `gg-*` attribute the library reads or writes, what reads it, and what shap
 
 | Attribute | On | Reads / writes | Notes |
 |---|---|---|---|
-| `gg-visible-when="name1:value1,..."` | element inside `<form>` or `[gg-form-scope]` | reads | Shown if **any** condition matches. Fades opacity over 200ms; sets `inert` + `aria-hidden` while hidden. |
+| `gg-visible-when="name1:value1,..."` | element inside `<form>` or `[gg-form-scope]` | reads | Shown if **any** condition matches. Fades opacity over 200ms; sets `inert` + `aria-hidden` while hidden. For checkboxes use `name:checked` / `name:unchecked` (reads `.checked` directly). |
 
 ## Status
 

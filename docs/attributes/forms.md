@@ -92,4 +92,17 @@ Conditionally show/hide elements based on form field values.
 </form>
 ```
 
+For checkboxes, use the `:checked` / `:unchecked` sentinels — these read the input's `.checked` property directly, since a checkbox's `value` attribute (often `"on"` by default) doesn't reflect its ticked state.
+
+```html
+<form>
+  <label><input type="checkbox" name="subscribe" /> Subscribe</label>
+
+  <div gg-visible-when="subscribe:checked">Shown only when ticked.</div>
+  <div gg-visible-when="subscribe:unchecked">Shown only when not ticked.</div>
+</form>
+```
+
+The strings `checked` and `unchecked` are reserved: a checkbox whose `value` attribute is literally `"checked"` or `"unchecked"` will be interpreted as the sentinel rather than a value match.
+
 Hidden elements get `display: none`, `inert`, and `aria-hidden="true"`. Transitions are a 200ms opacity fade. Use `gg-form-scope` on a non-`<form>` ancestor when `closest("form")` can't reach the inputs (e.g. shadow DOM).

@@ -1,5 +1,5 @@
 import { ATTR, SEL } from "./attrs.js";
-import { readField } from "./helpers/form-field.js";
+import { findInputs, readField } from "./helpers/form-field.js";
 import { setVisibility } from "./helpers/visibility.js";
 import { onElement } from "./dom-observer.js";
 
@@ -15,10 +15,21 @@ function parseConditions(attr: string): Condition[] {
     .filter((p) => p.name && p.value);
 }
 
+function matchesCondition(
+  scope: ParentNode,
+  { name, value }: Condition,
+): boolean {
+  if (value === "checked" || value === "unchecked") {
+    const anyChecked = findInputs(scope, name).some(
+      (i) => i instanceof HTMLInputElement && i.checked,
+    );
+    return value === "checked" ? anyChecked : !anyChecked;
+  }
+  return readField(scope, name) === value;
+}
+
 function matchesAny(scope: ParentNode, conditions: Condition[]): boolean {
-  return conditions.some(
-    ({ name, value }) => readField(scope, name) === value,
-  );
+  return conditions.some((c) => matchesCondition(scope, c));
 }
 
 const bindings = new WeakMap<HTMLElement, { cleanup: () => void }>();
