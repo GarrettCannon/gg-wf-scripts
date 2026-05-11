@@ -24,7 +24,12 @@ export async function initAuth<TContext>(
     }
     body.setAttribute(ATTR.auth, "true");
     if (roleQuery) {
-      const role = await roleQuery(context, userId);
+      let role: string | null = null;
+      try {
+        role = await roleQuery(context, userId);
+      } catch {
+        role = null;
+      }
       if (role) {
         body.setAttribute(ATTR.role, role);
       } else {
@@ -33,8 +38,13 @@ export async function initAuth<TContext>(
     }
   }
 
-  const userId = await getUser();
-  applyAuthAttrs(userId ?? null);
+  let userId: string | null = null;
+  try {
+    userId = (await getUser()) ?? null;
+  } catch {
+    userId = null;
+  }
+  applyAuthAttrs(userId);
 
   if (onChange) {
     onChange((userId) => applyAuthAttrs(userId ?? null));
