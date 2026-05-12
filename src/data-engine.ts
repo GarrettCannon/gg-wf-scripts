@@ -11,6 +11,7 @@ import { writeField } from "./helpers/form-field.js";
 import { runHandler, type RunHandlerResult } from "./helpers/run-handler.js";
 import { onElement } from "./dom-observer.js";
 import { onQueryChanged, getParams } from "./query-params.js";
+import { onRefresh } from "./refresh.js";
 
 type DataRecord = Record<string, unknown>;
 
@@ -228,8 +229,19 @@ export function initDataEngine<TContext>(
     });
   });
 
+  const unsubscribeRefresh = onRefresh((key) => {
+    document.querySelectorAll(SEL.dataAny).forEach((c) => {
+      const binding = getDataBinding(c);
+      if (!binding) return;
+      const keys = deps.queries[binding.id]?.refreshKeys;
+      if (!keys?.includes(key)) return;
+      handleQuery(c, deps);
+    });
+  });
+
   return () => {
     unbind();
     unsubscribe();
+    unsubscribeRefresh();
   };
 }

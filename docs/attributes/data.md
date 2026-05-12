@@ -149,3 +149,53 @@ app.addQuery("search_posts", async ({ sb }, params) => {
   <li gg-list-template><span gg-field="title"></span></li>
 </ul>
 ```
+
+## Refreshing after mutations
+
+When a form action or action mutates data, any list or detail view reading that data needs to re-run its query. Declare the topic the query cares about with `refreshKeys`, then publish that topic from the handler that did the mutation with `app.invalidate(...)`:
+
+```js
+app.addQuery("posts_list", async ({ sb }) => {
+  const { data } = await sb.from("posts").select("*").order("created_at", { ascending: false });
+  return data ?? [];
+}, { refreshKeys: ["posts"] });
+
+app.addFormAction("create_post", async ({ sb }, formData) => {
+  const { error } = await sb.from("posts").insert({
+    title: formData.get("title"),
+    body: formData.get("body"),
+  });
+  if (error) return { ok: false, error };
+  app.invalidate("posts");
+  return { ok: true };
+});
+```
+
+```html
+<form gg-form-action="create_post">
+  <input name="title" />
+  <textarea name="body"></textarea>
+  <button type="submit">Create</button>
+</form>
+
+<ul gg-data-list="posts_list">
+  <li gg-list-template><span gg-field="title"></span></li>
+</ul>
+```
+
+Pick one canonical key per entity (`"posts"`, `"users"`, …) and reuse it in every query that reads the entity and every handler that mutates it. A query can subscribe to multiple keys (`refreshKeys: ["posts", "tags"]`), and a single `invalidate` call can publish multiple at once (`app.invalidate("posts", "tags")`).
+
+`refreshKeys` is independent from `on` — `on` re-runs on URL param changes, `refreshKeys` re-runs on imperative `invalidate` calls. Use both on the same query if you need both triggers.
+
+`invalidate` is also available as a top-level import for handlers that don't otherwise touch the `app`:
+
+```js
+import { invalidate } from "gg-wf-scripts";
+
+app.addAction("delete_post", async ({ sb }, { id }) => {
+  const { error } = await sb.from("posts").delete().eq("id", id);
+  if (error) return { ok: false, error };
+  invalidate("posts");
+  return { ok: true };
+});
+```

@@ -2,6 +2,7 @@ import type { Query, RegisteredQuery } from "./queries.js";
 import type { Action, ActionResult } from "./actions.js";
 import type { FormAction } from "./form-actions.js";
 import { setQueryParams, removeQueryParams, initQueryParams } from "./query-params.js";
+import { invalidate } from "./refresh.js";
 import { executeQuery } from "./data-engine.js";
 import { executeAction } from "./action-engine.js";
 import { initAuth, type AuthAdapter } from "./auth.js";
@@ -22,6 +23,7 @@ import { VERSION } from "./version.js";
 export { VERSION } from "./version.js";
 
 export { setQueryParams, removeQueryParams };
+export { invalidate } from "./refresh.js";
 export { getPath } from "./helpers/path.js";
 export type { AuthAdapter } from "./auth.js";
 export type { Query, RegisteredQuery } from "./queries.js";
@@ -71,7 +73,7 @@ export type App<TContext = unknown> = {
   addQuery: <TResult = unknown>(
     id: string,
     fn: Query<TContext, TResult>,
-    opts?: { on?: string[] },
+    opts?: { on?: string[]; refreshKeys?: string[] },
   ) => void;
   addAction: <TData extends Record<string, unknown> = Record<string, unknown>>(
     id: string,
@@ -85,6 +87,12 @@ export type App<TContext = unknown> = {
     id: string,
     data?: TData,
   ) => Promise<ActionResult>;
+
+  /**
+   * Re-run every registered query whose `refreshKeys` includes any of the given
+   * keys. Call this from a form action or imperative code after mutating data.
+   */
+  invalidate: (...keys: string[]) => void;
 
   /**
    * Subscribe to errors from any registered handler — including thrown
@@ -134,7 +142,11 @@ export function init<TContext = unknown>(
     actions,
     formActions,
     addQuery: (id, fn, opts) => {
-      queries[id] = { handler: fn as Query<TContext>, on: opts?.on };
+      queries[id] = {
+        handler: fn as Query<TContext>,
+        on: opts?.on,
+        refreshKeys: opts?.refreshKeys,
+      };
     },
     addAction: (id, fn) => {
       actions[id] = fn as Action<TContext>;
@@ -164,6 +176,7 @@ export function init<TContext = unknown>(
         actions,
         emitError: (e) => errorBus.emit(e),
       }),
+    invalidate: (...keys) => invalidate(...keys),
     onError: (handler) => errorBus.subscribe(handler),
     start() {
       function run() {

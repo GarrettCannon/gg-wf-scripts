@@ -41,6 +41,31 @@ app.addQuery("posts_list", async ({ sb }, params) => {
 
 This is equivalent to putting `gg-data-on="q"` on every container that uses `posts_list`, but declared next to the handler so it can't drift from the markup. A `gg-data-on` attribute on a specific container still wins as a per-instance override.
 
+### Re-running after mutations
+
+Pass `opts.refreshKeys` to list topic strings this query should re-run on whenever `app.invalidate(...)` publishes one of them:
+
+```js
+app.addQuery("posts_list", async ({ sb }) => {
+  const { data } = await sb.from("posts").select("*");
+  return data ?? [];
+}, { refreshKeys: ["posts"] });
+
+app.addFormAction("create_post", async ({ sb }, formData) => {
+  const { error } = await sb.from("posts").insert({
+    title: formData.get("title"),
+    body: formData.get("body"),
+  });
+  if (error) return { ok: false, error };
+  app.invalidate("posts");
+  return { ok: true };
+});
+```
+
+Keys are arbitrary strings — pick one canonical name per entity (e.g. `"posts"`, `"users"`) and use it in every query that reads the entity and every handler that mutates it. `on` and `refreshKeys` are independent; a query can use both, either, or neither.
+
+See [Data binding › Refreshing after mutations](/attributes/data#refreshing-after-mutations) for the full pattern.
+
 ### Typed result
 
 ```ts

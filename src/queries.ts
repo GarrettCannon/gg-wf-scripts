@@ -6,4 +6,5 @@ export type Query<TContext = unknown, TResult = unknown> = (
 export type RegisteredQuery<TContext = unknown> = {
   handler: Query<TContext>;
   on?: string[];
+  refreshKeys?: string[];
 };

@@ -16,6 +16,8 @@ Every `gg-*` attribute the library reads or writes, what reads it, and what shap
 
 **Record shape:** plain object. Dot-paths are split by `.` and walked with `getPath`. Arrays for `gg-data` or `gg-data-form` produce a `console.warn`.
 
+**Refreshing after mutations:** register a query with `addQuery(id, fn, { refreshKeys: ["posts"] })` and call `app.invalidate("posts")` (or the top-level `invalidate` import) from any handler that mutates that entity. Every container bound to a subscribed query re-runs. Independent from `on`.
+
 **Reading the record from custom code:** every `gg-data`, `gg-data-form`, and cloned `gg-data-list` row sets `element.__ggRecord` and dispatches a bubbling `gg-data-ready` CustomEvent (with `detail.record`) on itself after the query resolves. Web components / React islands listen on the container (e.g. `host.closest("form")`) to hydrate their own state.
 
 ## Actions
