@@ -90,7 +90,8 @@ async function handleAction<TContext>(
   el: Element,
   deps: ActionEngineDeps<TContext>,
 ): Promise<void> {
-  if (el.hasAttribute(ATTR.loading)) return;
+  const loadingState = el.getAttribute(ATTR.loading);
+  if (loadingState === "loading" || loadingState === "refreshing") return;
 
   const id = el.getAttribute(ATTR.action);
   if (!id) return;

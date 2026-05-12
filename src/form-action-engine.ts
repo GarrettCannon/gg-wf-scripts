@@ -172,7 +172,8 @@ async function handleSubmit<TContext>(
   }
 
   event.preventDefault();
-  if (form.hasAttribute(ATTR.loading)) return;
+  const loadingState = form.getAttribute(ATTR.loading);
+  if (loadingState === "loading" || loadingState === "refreshing") return;
 
   if (form.hasAttribute(ATTR.confirm)) {
     const text = form.getAttribute(ATTR.confirmText) || "Are you sure?";
