@@ -64,6 +64,7 @@ Every `gg-*` attribute the library reads or writes, what reads it, and what shap
 | `gg-switch-query="<key>"` | container | reads | Mirrors a URL param onto `gg-switch-state`. Comma-separated keys are joined positionally. |
 | `gg-case="<value>"` | child of a switch | reads | Visible when its value matches the parent's `gg-switch-state`. Empty string = default. Comma = positional AND, `\|` = OR alternatives within a position. |
 | `gg-case-default` | child of a switch | reads | Presence-based modifier. Also visible when every segment of `gg-switch-state` is empty (all keys unset). Combine with `gg-case` to OR an empty-state fallback into a normal case. |
+| `gg-active` | child of a switch | written | Engine adds this presence-only attribute to the currently matching `gg-case` / `gg-case-default` child and removes it when the case stops matching. |
 
 ## Visibility
 

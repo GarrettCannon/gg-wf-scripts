@@ -51,6 +51,17 @@ For multi-key switches or when you want a default to live on the same element as
 
 Above, the edit pane shows when `?view=edit` is present and also when `view` is absent.
 
+## Active marker
+
+The currently visible case also receives a presence-only `gg-active` attribute, which the engine adds when the case becomes active and removes when it stops matching. This applies to `gg-case` and `gg-case-default` alike, so styling and selectors can target the active child without re-deriving the match:
+
+```css
+[gg-case][gg-active],
+[gg-case-default][gg-active] {
+  border-color: currentColor;
+}
+```
+
 ## Multiple values
 
 Both `gg-switch-query` and `gg-switch-field` accept comma-separated keys / paths. The state becomes the values joined by commas in the same order, and `gg-case` matches positionally (AND).

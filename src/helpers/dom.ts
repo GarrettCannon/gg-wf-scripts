@@ -64,6 +64,8 @@ export function applySwitchState(
     if (caseAttr == null && !isDefault) return;
     const matchesCase = caseAttr != null && caseMatches(caseAttr, state);
     const matchesDefault = isDefault && isEmpty;
-    setVisibility(child, matchesCase || matchesDefault, { instant });
+    const active = matchesCase || matchesDefault;
+    child.toggleAttribute(ATTR.active, active);
+    setVisibility(child, active, { instant });
   });
 }
