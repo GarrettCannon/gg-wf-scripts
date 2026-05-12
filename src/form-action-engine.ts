@@ -1,36 +1,37 @@
 import type { FormFieldError } from "./form-actions.js";
 import type { FormActionEngineDeps } from "./engine-deps.js";
 import { ATTR, SEL } from "./attrs.js";
-import { populateFields } from "./helpers/dom.js";
-import { findInputs } from "./helpers/form-field.js";
+import { populateFields, querySelectorAllDeep } from "./helpers/dom.js";
+import { findInputsDeep } from "./helpers/form-field.js";
 import { runHandler } from "./helpers/run-handler.js";
 import { onElement } from "./dom-observer.js";
 import { getParams } from "./query-params.js";
 
 function clearFieldError(form: HTMLFormElement, name: string): void {
-  findInputs(form, name).forEach((el) => {
+  findInputsDeep(form, name).forEach((el) => {
     el.removeAttribute(ATTR.formFieldInvalid);
   });
   const escaped = CSS.escape(name);
-  form
-    .querySelectorAll(`[${ATTR.formFieldError}="${escaped}"]`)
-    .forEach((el) => {
-      el.textContent = "";
-    });
+  querySelectorAllDeep(
+    form,
+    `[${ATTR.formFieldError}="${escaped}"]`,
+  ).forEach((el) => {
+    el.textContent = "";
+  });
 }
 
 function clearFormErrors(form: HTMLFormElement): void {
   form.removeAttribute(ATTR.formHasError);
-  form.querySelectorAll(SEL.formFieldInvalid).forEach((el) => {
+  querySelectorAllDeep(form, SEL.formFieldInvalid).forEach((el) => {
     el.removeAttribute(ATTR.formFieldInvalid);
   });
-  form.querySelectorAll(SEL.formFieldError).forEach((el) => {
+  querySelectorAllDeep(form, SEL.formFieldError).forEach((el) => {
     el.textContent = "";
   });
-  form.querySelectorAll(SEL.formError).forEach((el) => {
+  querySelectorAllDeep(form, SEL.formError).forEach((el) => {
     el.textContent = "";
   });
-  form.querySelectorAll(SEL.formErrorList).forEach((list) => {
+  querySelectorAllDeep(form, SEL.formErrorList).forEach((list) => {
     const template = list.querySelector(SEL.listTemplate);
     Array.from(list.children).forEach((child) => {
       if (child !== template) child.remove();
@@ -44,15 +45,16 @@ function applyFieldErrors(
 ): void {
   fieldErrors.forEach(({ name, message }) => {
     if (!name) return;
-    findInputs(form, name).forEach((el) => {
+    findInputsDeep(form, name).forEach((el) => {
       el.setAttribute(ATTR.formFieldInvalid, "true");
     });
     const escaped = CSS.escape(name);
-    form
-      .querySelectorAll(`[${ATTR.formFieldError}="${escaped}"]`)
-      .forEach((el) => {
-        el.textContent = message ?? "";
-      });
+    querySelectorAllDeep(
+      form,
+      `[${ATTR.formFieldError}="${escaped}"]`,
+    ).forEach((el) => {
+      el.textContent = message ?? "";
+    });
   });
 }
 
@@ -60,7 +62,7 @@ function applyErrorList(
   form: HTMLFormElement,
   fieldErrors: FormFieldError[],
 ): void {
-  form.querySelectorAll(SEL.formErrorList).forEach((list) => {
+  querySelectorAllDeep(form, SEL.formErrorList).forEach((list) => {
     const template = list.querySelector(SEL.listTemplate);
     if (!template) {
       console.warn(
@@ -82,7 +84,7 @@ function applyErrorList(
 function applyFormError(form: HTMLFormElement, error: unknown): void {
   if (error == null) return;
   const message = typeof error === "string" ? error : String(error);
-  form.querySelectorAll(SEL.formError).forEach((el) => {
+  querySelectorAllDeep(form, SEL.formError).forEach((el) => {
     el.textContent = message;
   });
 }
@@ -140,7 +142,7 @@ function bindFieldClearOnInput(form: HTMLFormElement): void {
   if (form.__ggFormErrorBound) return;
   form.__ggFormErrorBound = true;
   form.addEventListener("input", (e) => {
-    const target = e.target;
+    const target = e.composedPath()[0];
     if (!(target instanceof Element)) return;
     const name = target.getAttribute("name");
     if (!name) return;

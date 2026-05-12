@@ -3,6 +3,26 @@ import { getPath } from "./path.js";
 import { setVisibility } from "./visibility.js";
 
 /**
+ * querySelectorAll that recurses into open shadow roots. Mirrors how
+ * collectShadowFields gathers FormData from shadow-DOM inputs, so the
+ * form-action engine can surface error state on those same inputs.
+ */
+export function querySelectorAllDeep<T extends Element = Element>(
+  scope: ParentNode,
+  selector: string,
+): T[] {
+  const results: T[] = [];
+  const visit = (root: ParentNode): void => {
+    root.querySelectorAll<T>(selector).forEach((el) => results.push(el));
+    root.querySelectorAll<HTMLElement>("*").forEach((el) => {
+      if (el.shadowRoot) visit(el.shadowRoot);
+    });
+  };
+  visit(scope);
+  return results;
+}
+
+/**
  * Set textContent on every [gg-field] descendant of `root` to the value
  * at that field's dot-path on `record`. Null / missing values are left
  * as-is (keeps whatever the markup's default content was).

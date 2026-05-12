@@ -1,3 +1,5 @@
+import { querySelectorAllDeep } from "./dom.js";
+
 export type FieldInput =
   | HTMLInputElement
   | HTMLSelectElement
@@ -14,6 +16,19 @@ export function findInputs(scope: ParentNode, name: string): FieldInput[] {
     scope.querySelectorAll<FieldInput>(
       `input[name="${escaped}"], select[name="${escaped}"], textarea[name="${escaped}"]`,
     ),
+  );
+}
+
+/**
+ * Like findInputs, but recurses into open shadow roots so the form-action
+ * engine can mark/clear invalid state on shadow-DOM inputs that submit via
+ * collectShadowFields.
+ */
+export function findInputsDeep(scope: ParentNode, name: string): FieldInput[] {
+  const escaped = CSS.escape(name);
+  return querySelectorAllDeep<FieldInput>(
+    scope,
+    `input[name="${escaped}"], select[name="${escaped}"], textarea[name="${escaped}"]`,
   );
 }
 
