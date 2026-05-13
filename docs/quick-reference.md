@@ -50,7 +50,7 @@ Every `gg-*` attribute the library reads or writes, what reads it, and what shap
 
 | Attribute | On | Reads / writes | Notes |
 |---|---|---|---|
-| `gg-query-set="k1:v1,k2:v2"` | clickable | reads | On click, sets the listed params. |
+| `gg-query-set="k1:v1,k2:v2"` | clickable | reads | On click, sets the listed params. Values support `{path}` placeholders resolved against the nearest ancestor `__ggRecord`; a missing path drops just that param. |
 | `gg-query-remove="k1,k2"` | clickable | reads | On click, removes the listed params. |
 | `gg-query-bind="<key>"` | input/select/textarea | reads + writes URL | Two-way binding between input value and URL param. |
 | `gg-query-debounce="<ms>"` | same input | reads | Debounce ms for `gg-query-bind`. |

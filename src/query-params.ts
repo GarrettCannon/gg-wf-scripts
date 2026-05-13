@@ -1,5 +1,6 @@
 import { ATTR, SEL } from "./attrs.js";
 import { onElement } from "./dom-observer.js";
+import { getPath } from "./helpers/path.js";
 
 type QueryChangeCallback = (key: string, value: string | null) => void;
 
@@ -45,19 +46,58 @@ export function removeQueryParams(keys: string[]): void {
 
 // ---- click delegation for gg-query-set / gg-query-remove ----
 
+function findRecord(el: Element): Record<string, unknown> | null {
+  let node: Element | null = el;
+  while (node) {
+    if (node.__ggRecord) return node.__ggRecord;
+    node = node.parentElement;
+  }
+  return null;
+}
+
+const PLACEHOLDER = /\{([^}]+)\}/g;
+
+/**
+ * Resolve `{path}` placeholders in `value` against the nearest `__ggRecord`.
+ * Returns null if any referenced path is missing — caller drops the param
+ * so we never write "item-" to the URL when the source field is absent.
+ */
+function resolveTemplate(
+  value: string,
+  record: Record<string, unknown> | null,
+): string | null {
+  if (!value.includes("{")) return value;
+  let missing = false;
+  const out = value.replace(PLACEHOLDER, (_, path) => {
+    const resolved = record ? getPath(record, path.trim()) : undefined;
+    if (resolved == null) {
+      missing = true;
+      return "";
+    }
+    return String(resolved);
+  });
+  return missing ? null : out;
+}
+
 function handleQueryClick(target: Element | null): void {
   if (!target) return;
   const setTrigger = target.closest(`[${ATTR.querySet}]`);
   if (setTrigger) {
     const attr = setTrigger.getAttribute(ATTR.querySet) ?? "";
+    const record = findRecord(setTrigger);
     const params = attr
       .split(",")
       .filter(Boolean)
       .map((pair) => {
-        const [key, value] = pair.split(":");
-        return { key: key?.trim() ?? "", value: value?.trim() ?? "" };
+        const [key, rawValue] = pair.split(":");
+        const trimmedKey = key?.trim() ?? "";
+        const trimmedValue = rawValue?.trim() ?? "";
+        if (!trimmedKey || !trimmedValue) return null;
+        const value = resolveTemplate(trimmedValue, record);
+        if (value === null || value === "") return null;
+        return { key: trimmedKey, value };
       })
-      .filter((p) => p.key && p.value);
+      .filter((p): p is { key: string; value: string } => p !== null);
     if (params.length) setQueryParams(params);
     return;
   }

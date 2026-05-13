@@ -9,6 +9,18 @@ Read and write URL query params declaratively.
 <button gg-query-set="modal:view,id:42">Open</button>
 ```
 
+Values support `{path}` placeholders that resolve against the nearest ancestor `__ggRecord` (set by `gg-data`, `gg-data-form`, or each row of `gg-data-list`). Dot-paths work, and literal text can be mixed in. If any referenced path is missing, that param is dropped rather than written as an empty or partial value.
+
+```html
+<ul gg-data-list="posts">
+  <li gg-list-template>
+    <span gg-field="title"></span>
+    <!-- On click in a row, set ?modal=view&id=<that row's id> -->
+    <button gg-query-set="modal:view,id:{id}">Open</button>
+  </li>
+</ul>
+```
+
 ## Remove params on click
 
 ```html
