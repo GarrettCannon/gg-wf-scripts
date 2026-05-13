@@ -69,10 +69,6 @@ function renderListItems(
     const clone = template.cloneNode(true) as HTMLElement;
     clone.removeAttribute(ATTR.listTemplate);
     const record = (item ?? {}) as DataRecord;
-    if (clone instanceof HTMLButtonElement) {
-      clone.setAttribute(ATTR.querySet, `modal:view,id:${record.id}`);
-    }
-    if (record?.id != null) clone.id = String(record.id);
     clone.__ggRecord = record;
     populateFields(clone, record);
     applySwitchFields(clone, record);
