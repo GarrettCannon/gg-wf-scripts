@@ -115,3 +115,5 @@ app.addFormAction("create_post", async ({ sb }, formData) => {
 ```
 
 `fn` receives `(context, formData, params)` where `formData` is a `FormData` snapshot of the submitted form. The default submit is prevented automatically. Return `{ ok: true }`, `{ ok: false, error }`, or `{ ok: false, field_errors: [...] }` (see [Forms › Validation errors](/attributes/forms#validation-errors)).
+
+A successful return resets the form's named inputs to their defaults. Pass `{ ok: true, reset: false }` to keep the values in place.

@@ -1,2 +1,2 @@
 // Auto-generated from package.json by scripts/sync-version.sh. Do not edit.
-export const VERSION = "9.0.0";
+export const VERSION = "9.1.0";

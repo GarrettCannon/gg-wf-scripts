@@ -4,6 +4,7 @@ export type FormActionResult = {
   ok: boolean;
   error?: unknown;
   field_errors?: FormFieldError[];
+  reset?: boolean;
 };
 
 export type FormAction<TContext = unknown> = (

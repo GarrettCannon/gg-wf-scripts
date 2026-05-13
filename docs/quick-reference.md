@@ -44,7 +44,7 @@ Every `gg-*` attribute the library reads or writes, what reads it, and what shap
 | `gg-form-error-list` | container | reads | Cloning target — see `gg-list-template` — for rendering one element per `field_errors` entry. |
 | `gg-form-scope` | container | reads | Used by `gg-visible-when` to scope its lookups. |
 
-**Form action handler shape:** `(context, formData, params) => { ok: boolean, error?: unknown, field_errors?: { name, message }[] } \| void`.
+**Form action handler shape:** `(context, formData, params) => { ok: boolean, error?: unknown, field_errors?: { name, message }[], reset?: boolean } \| void`. Successful submits reset the form's inputs by default; return `{ ok: true, reset: false }` to keep values.
 
 ## URL params
 

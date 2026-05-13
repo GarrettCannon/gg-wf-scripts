@@ -105,6 +105,48 @@ function formDataToObject(
   return out;
 }
 
+function resetField(
+  field: HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement,
+): void {
+  if (field instanceof HTMLInputElement) {
+    if (field.type === "checkbox" || field.type === "radio") {
+      field.checked = field.defaultChecked;
+    } else if (field.type === "file") {
+      field.value = "";
+    } else {
+      field.value = field.defaultValue;
+    }
+  } else if (field instanceof HTMLSelectElement) {
+    Array.from(field.options).forEach((opt) => {
+      opt.selected = opt.defaultSelected;
+    });
+  } else {
+    field.value = field.defaultValue;
+  }
+  field.dispatchEvent(new Event("input", { bubbles: true }));
+  field.dispatchEvent(new Event("change", { bubbles: true }));
+}
+
+function resetFormFields(form: HTMLFormElement): void {
+  form
+    .querySelectorAll<
+      HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
+    >("input[name], select[name], textarea[name]")
+    .forEach(resetField);
+  const visitShadow = (root: ParentNode): void => {
+    root.querySelectorAll<HTMLElement>("*").forEach((el) => {
+      if (!el.shadowRoot) return;
+      el.shadowRoot
+        .querySelectorAll<
+          HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
+        >("input[name], select[name], textarea[name]")
+        .forEach(resetField);
+      visitShadow(el.shadowRoot);
+    });
+  };
+  visitShadow(form);
+}
+
 function collectShadowFields(root: ParentNode, formData: FormData): void {
   root.querySelectorAll<HTMLElement>("*").forEach((el) => {
     if (!el.shadowRoot) return;
@@ -212,20 +254,18 @@ async function handleSubmit<TContext>(
     return;
   }
 
-  const result = handlerResult.value;
-  if (result && (result as { ok?: boolean }).ok === false) {
-    const failure = result as {
-      error?: unknown;
-      field_errors?: FormFieldError[];
-    };
-    const fieldErrors = Array.isArray(failure.field_errors)
-      ? failure.field_errors
+  const result = handlerResult.value as
+    | { ok?: boolean; error?: unknown; field_errors?: FormFieldError[]; reset?: boolean }
+    | void;
+  if (result && result.ok === false) {
+    const fieldErrors = Array.isArray(result.field_errors)
+      ? result.field_errors
       : [];
     form.setAttribute(ATTR.formHasError, "true");
     applyFieldErrors(form, fieldErrors);
     applyErrorList(form, fieldErrors);
-    applyFormError(form, failure.error);
-    if (!fieldErrors.length && failure.error == null) {
+    applyFormError(form, result.error);
+    if (!fieldErrors.length && result.error == null) {
       console.warn(
         `[gg-form-action] "${id}" returned ok:false with no error or field_errors`,
       );
@@ -233,9 +273,14 @@ async function handleSubmit<TContext>(
     deps.emitError({
       prefix: "[gg-form-action]",
       id,
-      error: failure.error ?? "validation",
+      error: result.error ?? "validation",
       fields: { form, fieldErrors },
     });
+    return;
+  }
+
+  if (!result || result.reset !== false) {
+    resetFormFields(form);
   }
 }
 

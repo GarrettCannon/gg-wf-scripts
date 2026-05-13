@@ -24,6 +24,8 @@ app.addFormAction("create_post", async ({ sb }, formData) => {
 
 The handler receives `(context, formData, params)`. `preventDefault` is called automatically — the form will not submit to its `action` URL. Return `{ ok: true }` or `{ ok: false, error }`.
 
+On a successful submit the engine resets every named input back to its default value (light DOM + open shadow roots) and dispatches `input`/`change` so downstream listeners react. Opt out per-submit by returning `{ ok: true, reset: false }` — useful when the form should stay populated, e.g. inline edit forms.
+
 ## Validation errors
 
 Form actions can return validation errors and the engine will display them via attributes on your markup.
