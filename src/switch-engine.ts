@@ -22,8 +22,11 @@ export function initSwitchEngine(): () => void {
 
   // Initial pass for elements present at start AND any inserted later — the
   // mutation observer above only fires on attribute *changes*, so freshly
-  // inserted nodes need an explicit apply.
-  const unbind = onElement(SEL.switchState, applySwitchState);
+  // inserted nodes need an explicit apply. Instant so display:none is
+  // committed synchronously before the data engine's initial pass reads it.
+  const unbind = onElement(SEL.switchState, (el) =>
+    applySwitchState(el, { instant: true }),
+  );
 
   return () => {
     observer.disconnect();
