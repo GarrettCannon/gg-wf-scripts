@@ -102,3 +102,22 @@ export function setVisibility(
 	if (visible) show(el, instant);
 	else hide(el, instant);
 }
+
+/**
+ * False when the element or any ancestor has `display: none`. The data engine
+ * uses this to skip queries on hidden tabs/panels and defer them to whenever
+ * the element actually gets rendered. Uses the native `checkVisibility()` API
+ * where available (Baseline 2024) and walks `getComputedStyle` ancestors as a
+ * fallback for older Safari/Firefox.
+ */
+export function isDisplayed(el: Element): boolean {
+	if (typeof window === "undefined") return true;
+	if (!(el instanceof HTMLElement)) return true;
+	if (typeof el.checkVisibility === "function") return el.checkVisibility();
+	let cur: HTMLElement | null = el;
+	while (cur) {
+		if (getComputedStyle(cur).display === "none") return false;
+		cur = cur.parentElement;
+	}
+	return true;
+}

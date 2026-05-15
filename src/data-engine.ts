@@ -6,7 +6,7 @@ import {
   setSwitchState,
   applySwitchState,
 } from "./helpers/dom.js";
-import { setVisibility } from "./helpers/visibility.js";
+import { setVisibility, isDisplayed } from "./helpers/visibility.js";
 import { writeField } from "./helpers/form-field.js";
 import { runHandler, type RunHandlerResult } from "./helpers/run-handler.js";
 import { onElement } from "./dom-observer.js";
@@ -150,9 +150,14 @@ function getDataBinding(
 async function handleQuery<TContext>(
   container: Element,
   deps: DataEngineDeps<TContext>,
+  pending: WeakSet<Element>,
 ): Promise<void> {
   const binding = getDataBinding(container);
   if (!binding) return;
+  if (!isDisplayed(container)) {
+    pending.add(container);
+    return;
+  }
   const { id, kind } = binding;
 
   const handlerResult = await executeQuery(id, deps, container);
@@ -206,10 +211,40 @@ export function initDataEngine<TContext>(
   deps: DataEngineDeps<TContext>,
 ): () => void {
   const seen = new WeakSet<Element>();
+  const pending = new WeakSet<Element>();
+  const observed = new WeakSet<Element>();
+
+  // Large rootMargin so viewport position is irrelevant — only display state
+  // gates intersection. IO reports zero-area for display:none, so we get a
+  // reliable callback when a hidden tab/panel becomes display-visible.
+  const observer =
+    typeof IntersectionObserver === "undefined"
+      ? null
+      : new IntersectionObserver(
+          (entries) => {
+            for (const entry of entries) {
+              if (!entry.isIntersecting) continue;
+              const el = entry.target;
+              if (!pending.has(el)) continue;
+              if (!isDisplayed(el)) continue;
+              pending.delete(el);
+              handleQuery(el, deps, pending);
+            }
+          },
+          { rootMargin: "9999px" },
+        );
+
+  const track = (el: Element) => {
+    if (observed.has(el)) return;
+    observed.add(el);
+    observer?.observe(el);
+  };
+
   const unbind = onElement(SEL.dataAny, (el) => {
+    track(el);
     if (seen.has(el)) return;
     seen.add(el);
-    handleQuery(el, deps);
+    handleQuery(el, deps, pending);
   });
 
   const unsubscribe = onQueryChanged((key) => {
@@ -221,7 +256,7 @@ export function initDataEngine<TContext>(
         ? attr.split(",").map((s) => s.trim())
         : deps.queries[binding.id]?.on;
       if (!keys?.includes(key)) return;
-      handleQuery(c, deps);
+      handleQuery(c, deps, pending);
     });
   });
 
@@ -231,7 +266,7 @@ export function initDataEngine<TContext>(
       if (!binding) return;
       const keys = deps.queries[binding.id]?.refreshKeys;
       if (!keys?.includes(key)) return;
-      handleQuery(c, deps);
+      handleQuery(c, deps, pending);
     });
   });
 
@@ -239,5 +274,6 @@ export function initDataEngine<TContext>(
     unbind();
     unsubscribe();
     unsubscribeRefresh();
+    observer?.disconnect();
   };
 }
