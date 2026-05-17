@@ -27,7 +27,12 @@ export { invalidate } from "./refresh.js";
 export { getPath } from "./helpers/path.js";
 export type { AuthAdapter } from "./auth.js";
 export type { Query, RegisteredQuery } from "./queries.js";
-export type { Action, ActionResult } from "./actions.js";
+export type {
+  Action,
+  ActionHelpers,
+  ActionResult,
+  RemoveItemPredicate,
+} from "./actions.js";
 export type { FormAction, FormActionResult, FormFieldError } from "./form-actions.js";
 export type { GgErrorEvent, ErrorHandler } from "./errors.js";
 

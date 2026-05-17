@@ -54,4 +54,4 @@ See [Data binding › Refreshing after mutations](/attributes/data#refreshing-af
 
 ## Types
 
-`AuthAdapter`, `Query`, `Action`, `ActionResult`, `FormAction`, `FormActionResult`, `FormFieldError`, `GgErrorEvent`, and `ErrorHandler` are all exported as types.
+`AuthAdapter`, `Query`, `Action`, `ActionHelpers`, `ActionResult`, `RemoveItemPredicate`, `FormAction`, `FormActionResult`, `FormFieldError`, `GgErrorEvent`, and `ErrorHandler` are all exported as types.

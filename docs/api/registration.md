@@ -88,7 +88,22 @@ app.addAction("delete_post", async ({ sb }, { id }) => {
 });
 ```
 
-`fn` receives `(context, data, params)`. Return `{ ok: true }` or `{ ok: false, error }`.
+`fn` receives `(context, data, params, helpers)`. Return `{ ok: true }` or `{ ok: false, error }`.
+
+### Helpers
+
+`helpers.removeItem(predicate)` removes matching clone(s) from the `gg-data-list` that contains the trigger — useful for optimistic deletes without a full list refetch:
+
+```js
+app.addAction("delete_post", async ({ sb }, { id }, _params, helpers) => {
+  const { error } = await sb.from("posts").delete().eq("id", id);
+  if (error) return { ok: false, error };
+  helpers.removeItem((record) => record.id === id);
+  return { ok: true };
+});
+```
+
+If a `transition` is configured on `init()`, the removed row fades out using the same duration/easing as the rest of the library before detaching. If the trigger isn't inside a list, `removeItem` warns and no-ops. See [Actions › Removing a list item](/attributes/actions#removing-a-list-item) for more.
 
 ### Typed data
 

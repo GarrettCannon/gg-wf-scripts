@@ -30,7 +30,9 @@ Every `gg-*` attribute the library reads or writes, what reads it, and what shap
 | `gg-confirm` | element with `gg-action` or `gg-form-action` | reads | If present, calls `window.confirm()` before firing. |
 | `gg-confirm-text="<msg>"` | same | reads | Confirmation message. Defaults to `"Are you sure?"`. |
 
-**Action handler shape:** `(context, data, params) => { ok: boolean, error?: unknown } \| void`. Returning `{ ok: false }` triggers `onError`.
+**Action handler shape:** `(context, data, params, helpers) => { ok: boolean, error?: unknown } \| void`. Returning `{ ok: false }` triggers `onError`.
+
+**Helpers:** `helpers.removeItem(predicate)` — when the trigger is inside a `gg-data-list`, removes every clone whose `__ggRecord` matches the predicate. Fades out if `init({ transition })` is configured, otherwise instant. No-ops with a warning when the trigger isn't inside a list.
 
 ## Form actions
 

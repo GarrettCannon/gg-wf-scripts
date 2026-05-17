@@ -40,6 +40,29 @@ app.addAction("delete_post", async ({ sb }, { id }) => {
 });
 ```
 
-Handlers receive `(context, data, params)` — `params` is a `URLSearchParams` snapshot of the current URL.
+Handlers receive `(context, data, params, helpers)`. `params` is a `URLSearchParams` snapshot of the current URL. `helpers` exposes utilities scoped to the trigger — see below.
+
+## Removing a list item
+
+When an action triggered from inside a `gg-data-list` row succeeds, `helpers.removeItem(predicate)` removes the matching clone(s) from that list without refetching:
+
+```js
+app.addAction("delete_post", async ({ sb }, { id }, _params, helpers) => {
+  const { error } = await sb.from("posts").delete().eq("id", id);
+  if (error) return { ok: false, error };
+  helpers.removeItem((record) => record.id === id);
+  return { ok: true };
+});
+```
+
+How it works:
+
+- The action engine captures the trigger's enclosing `gg-data-list` container before invoking the handler. `removeItem` walks that container's rendered rows and removes every clone whose `__ggRecord` matches the predicate.
+- The predicate runs against `__ggRecord` (the row's source record), so you can match on any field — `id`, `slug`, compound keys, etc.
+- If the trigger isn't inside a list (e.g. a global action button), `removeItem` warns and no-ops.
+
+If a `transition` is configured on `init()`, the removed clone fades out using the same duration/easing as `gg-visible-when` and switcher cases before detaching; otherwise removal is instant.
+
+`removeItem` is independent from `app.invalidate()`. Call `removeItem` for optimistic local updates after a delete; call `invalidate` when you need every subscribed list/detail view to refetch from the server. The two compose — you can do both if a delete affects multiple lists and you only want to fast-path the one the user clicked in.
 
 See [Loading and confirm](/attributes/loading) for the corresponding loading-state and confirmation prompt attributes.

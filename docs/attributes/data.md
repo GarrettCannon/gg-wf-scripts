@@ -199,3 +199,5 @@ app.addAction("delete_post", async ({ sb }, { id }) => {
   return { ok: true };
 });
 ```
+
+For deletes specifically, `helpers.removeItem(predicate)` skips the refetch entirely and just removes the matching clone(s) from the list the trigger lives in — see [Actions › Removing a list item](/attributes/actions#removing-a-list-item).

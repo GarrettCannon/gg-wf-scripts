@@ -104,6 +104,39 @@ export function setVisibility(
 }
 
 /**
+ * Fade-out and detach. Used by data-engine list removal so deletes participate
+ * in the global transition config. With duration 0 (default) or reduced motion,
+ * detaches immediately.
+ */
+export function removeWithFade(el: HTMLElement): void {
+	animations.get(el)?.stop();
+	const duration = effectiveDuration();
+	if (duration === 0) {
+		el.remove();
+		return;
+	}
+
+	el.setAttribute("inert", "");
+	el.setAttribute("aria-hidden", "true");
+
+	const anim = animate(
+		el,
+		{ opacity: 0 },
+		{ duration: duration / 1000, ease: config.ease },
+	);
+	animations.set(el, anim);
+	anim.then(
+		() => {
+			if (animations.get(el) !== anim) return;
+			el.remove();
+		},
+		() => {
+			/* superseded */
+		},
+	);
+}
+
+/**
  * False when the element or any ancestor has `display: none`. The data engine
  * uses this to skip queries on hidden tabs/panels and defer them to whenever
  * the element actually gets rendered. Uses the native `checkVisibility()` API

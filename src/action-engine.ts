@@ -1,10 +1,47 @@
 import type { ActionEngineDeps } from "./engine-deps.js";
-import type { ActionResult } from "./actions.js";
+import type { ActionHelpers, ActionResult } from "./actions.js";
 import { ATTR, SEL } from "./attrs.js";
 import { runHandler } from "./helpers/run-handler.js";
+import { removeWithFade } from "./helpers/visibility.js";
 import { getParams } from "./query-params.js";
 
 type ActionData = Record<string, unknown>;
+
+function findListClone(
+  el: Element,
+): { clone: Element; list: Element } | null {
+  let node: Element | null = el;
+  while (node) {
+    const parent: Element | null = node.parentElement;
+    if (node.__ggRecord && parent?.hasAttribute(ATTR.dataList)) {
+      return { clone: node, list: parent };
+    }
+    node = parent;
+  }
+  return null;
+}
+
+function makeHelpers(scope: { clone: Element; list: Element } | null): ActionHelpers {
+  return {
+    removeItem(predicate) {
+      if (!scope) {
+        console.warn(
+          "[gg-action] removeItem() called but the trigger isn't inside a [gg-data-list] item",
+        );
+        return;
+      }
+      const template = scope.list.querySelector(SEL.listTemplate);
+      Array.from(scope.list.children).forEach((child) => {
+        if (child === template) return;
+        const record = child.__ggRecord;
+        if (!record) return;
+        if (!predicate(record)) return;
+        if (child instanceof HTMLElement) removeWithFade(child);
+        else child.remove();
+      });
+    },
+  };
+}
 
 function parseActionData(el: Element): ActionData {
   const data: ActionData = {};
@@ -45,6 +82,7 @@ export async function executeAction<TContext>(
   data: ActionData,
   deps: ActionEngineDeps<TContext>,
   trigger?: Element,
+  helpers?: ActionHelpers,
 ): Promise<ActionResult> {
   const params = getParams();
   const fields: Record<string, unknown> = {
@@ -61,6 +99,8 @@ export async function executeAction<TContext>(
     return { ok: false, error };
   }
 
+  const resolvedHelpers = helpers ?? makeHelpers(null);
+
   const result = await runHandler(
     {
       prefix: "[gg-action]",
@@ -70,7 +110,7 @@ export async function executeAction<TContext>(
       emitError: deps.emitError,
       loading: trigger ? [trigger] : undefined,
     },
-    () => action(deps.context, data, params),
+    () => action(deps.context, data, params, resolvedHelpers),
   );
 
   if (!result.ok) return { ok: false, error: result.error };
@@ -105,7 +145,9 @@ async function handleAction<TContext>(
   const explicit = parseActionData(el);
   const data = record ? { ...record, ...explicit } : explicit;
 
-  await executeAction(id, data, deps, el);
+  const helpers = makeHelpers(findListClone(el));
+
+  await executeAction(id, data, deps, el, helpers);
 }
 
 export function initActionEngine<TContext>(
