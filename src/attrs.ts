@@ -49,6 +49,8 @@ export const ATTR = {
   confirmText: "gg-confirm-text",
   auth: "gg-auth",
   role: "gg-role",
+  pageAuth: "gg-page-auth",
+  pageRole: "gg-page-role",
 } as const;
 
 export const SEL = {

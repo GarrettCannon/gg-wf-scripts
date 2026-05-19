@@ -85,6 +85,8 @@ Every `gg-*` attribute the library reads or writes, what reads it, and what shap
 | `gg-auth="true"` / `"false"` | any element | reads | Hidden via inline `display: none` when its value doesn't match `body[gg-auth]`. |
 | `gg-role="<role>"` | `<body>` | written | The string returned by `auth.roleQuery`. Removed when no role / signed out. |
 | `gg-role="<role>"` | any element | reads | Hidden when the value doesn't match `body[gg-role]`. Comma-separate for OR, e.g. `gg-role="admin,editor"`. |
+| `gg-page-auth="true"` | `<body>` | reads | Gates the whole page — redirects to `auth.signedOutRedirect` if no signed-in user. No-op on `*.webflow.io`. |
+| `gg-page-role="<role>"` | `<body>` | reads | Gates the whole page — redirects to `auth.unauthorizedRedirect` (or `signedOutRedirect`) if role doesn't match. Comma-separate for OR. No-op on `*.webflow.io`. |
 
 ## Inbound events
 
