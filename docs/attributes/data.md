@@ -26,6 +26,16 @@ Display data from your registered queries directly in the DOM.
 </form>
 ```
 
+Array values are joined with `", "` before being written into text inputs, so a record like `{ tags: ["a", "b"] }` prefills as `"a, b"` and submits back in the same shape it was typed.
+
+Add `gg-field` on an input to source the prefill from a different path than the input's `name`. The submitted field name stays the same — useful when the DB column and the form field don't line up:
+
+```html
+<form gg-data-form="post_by_id">
+  <input name="tags" gg-field="tag_names" />
+</form>
+```
+
 ## Lists
 
 `gg-data-list` runs a query that returns an array, and clones a `[gg-list-template]` element for each record:

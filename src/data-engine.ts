@@ -50,7 +50,10 @@ function populateFormFields(root: Element, record: DataRecord): void {
     .forEach((el) => {
       const name = el.getAttribute("name");
       if (!name) return;
-      writeField(root, name, getPath(record, name));
+      // gg-field on an input overrides the source path while leaving `name`
+      // (and therefore the submitted shape) untouched.
+      const path = el.getAttribute(ATTR.field) || name;
+      writeField(root, name, getPath(record, path));
     });
 }
 

@@ -65,17 +65,22 @@ export function writeField(
   value: unknown,
 ): void {
   if (value == null) return;
+  // Arrays prefill as ", "-joined strings so the form submits them in the same
+  // shape it received — matching how multi-value text fields are typed in.
+  const stringValue = Array.isArray(value)
+    ? value.map((v) => (v == null ? "" : String(v))).join(", ")
+    : String(value);
   findInputs(scope, name).forEach((el) => {
     if (el instanceof HTMLInputElement) {
       if (el.type === "checkbox") {
         el.checked = Boolean(value);
       } else if (el.type === "radio") {
-        el.checked = String(el.value) === String(value);
+        el.checked = el.value === stringValue;
       } else {
-        el.value = String(value);
+        el.value = stringValue;
       }
     } else {
-      el.value = String(value);
+      el.value = stringValue;
     }
     el.dispatchEvent(new Event("input", { bubbles: true }));
     el.dispatchEvent(new Event("change", { bubbles: true }));
