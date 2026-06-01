@@ -11,4 +11,5 @@ export type FormAction<TContext = unknown> = (
   context: TContext,
   formData: FormData,
   params: URLSearchParams,
+  data: Record<string, unknown>,
 ) => Promise<FormActionResult | void> | FormActionResult | void;

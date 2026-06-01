@@ -22,9 +22,32 @@ app.addFormAction("create_post", async ({ sb }, formData) => {
 });
 ```
 
-The handler receives `(context, formData, params)`. `preventDefault` is called automatically — the form will not submit to its `action` URL. Return `{ ok: true }` or `{ ok: false, error }`.
+The handler receives `(context, formData, params, data)`. `preventDefault` is called automatically — the form will not submit to its `action` URL. Return `{ ok: true }` or `{ ok: false, error }`.
 
 On a successful submit the engine resets every named input back to its default value (light DOM + open shadow roots) and dispatches `input`/`change` so downstream listeners react. Opt out per-submit by returning `{ ok: true, reset: false }` — useful when the form should stay populated, e.g. inline edit forms.
+
+### Extra data on the form
+
+Use `gg-action-data` on the `<form>` to pass data alongside the submitted fields — handy for ids that aren't user-editable inputs.
+
+```html
+<form gg-form-action="update_post" gg-action-data-post-id="abc123">
+  <input name="title" />
+  <button type="submit">Save</button>
+</form>
+```
+
+```js
+app.addFormAction("update_post", async ({ sb }, formData, _params, data) => {
+  const { error } = await sb
+    .from("posts")
+    .update({ title: formData.get("title") })
+    .eq("id", data["post-id"]);
+  return error ? { ok: false, error } : { ok: true };
+});
+```
+
+Both forms work the same as on `gg-action`: `gg-action-data="k1:v1,k2:v2"` for the csv form, or `gg-action-data-{name}="value"` per attribute (see [Actions](/attributes/actions) for the parsing details).
 
 ## Validation errors
 

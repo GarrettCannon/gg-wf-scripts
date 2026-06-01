@@ -4,6 +4,7 @@ import { ATTR, SEL } from "./attrs.js";
 import { populateFields, querySelectorAllDeep } from "./helpers/dom.js";
 import { findInputsDeep } from "./helpers/form-field.js";
 import { runHandler } from "./helpers/run-handler.js";
+import { parseActionData } from "./helpers/action-data.js";
 import { onElement } from "./dom-observer.js";
 import { getParams } from "./query-params.js";
 
@@ -227,6 +228,7 @@ async function handleSubmit<TContext>(
   const formData = new FormData(form);
   collectShadowFields(form, formData);
   const params = getParams();
+  const data = parseActionData(form);
 
   const submitControls = form.querySelectorAll<HTMLElement>(
     'button[type="submit"], button:not([type]), input[type="submit"]',
@@ -240,12 +242,13 @@ async function handleSubmit<TContext>(
         form,
         formData: formDataToObject(formData),
         params: Object.fromEntries(params),
+        data,
       },
       debug: deps.debug,
       emitError: deps.emitError,
       loading: [form, ...submitControls],
     },
-    () => action(deps.context, formData, params),
+    () => action(deps.context, formData, params, data),
   );
 
   if (!handlerResult.ok) {
