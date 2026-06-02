@@ -24,15 +24,18 @@ export function querySelectorAllDeep<T extends Element = Element>(
 
 /**
  * Set textContent on every [gg-field] descendant of `root` to the value
- * at that field's dot-path on `record`. Null / missing values are left
- * as-is (keeps whatever the markup's default content was).
+ * at that field's dot-path on `record`. On <img> elements the value is
+ * written to `src` instead. Null / missing values are left as-is (keeps
+ * whatever the markup's default content was).
  */
 export function populateFields(root: Element, record: unknown): void {
   root.querySelectorAll<HTMLElement>("[gg-field]").forEach((el) => {
     const path = el.getAttribute("gg-field");
     if (!path) return;
     const value = getPath(record, path);
-    if (value != null) el.textContent = String(value);
+    if (value == null) return;
+    if (el instanceof HTMLImageElement) el.src = String(value);
+    else el.textContent = String(value);
   });
 }
 

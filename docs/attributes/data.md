@@ -13,7 +13,7 @@ Display data from your registered queries directly in the DOM.
 </div>
 ```
 
-`gg-field` supports dot-paths for nested data (e.g. `author.name`).
+`gg-field` supports dot-paths for nested data (e.g. `author.name`). On an `<img>` element the value is written to `src` instead of `textContent`, so `<img gg-field="cover_url">` sets the image source.
 
 ## Form pre-fill
 

@@ -10,7 +10,7 @@ Every `gg-*` attribute the library reads or writes, what reads it, and what shap
 | `gg-data-list="<id>"` | container | reads | Runs query `<id>`, expects array. Clones `[gg-list-template]` per record. |
 | `gg-data-form="<id>"` | `<form>` or container | reads | Runs query `<id>`, expects single object. Pre-fills inputs by `name`. Array values are `", "`-joined into text inputs. |
 | `gg-data-on="<key>,..."` | same as above | reads | Re-runs the query whenever any listed URL param changes. Per-instance override of `addQuery(id, fn, { on: [...] })`. |
-| `gg-field="<dot.path>"` | descendant | writes `textContent` | Set from the parent record. Skipped if the path resolves to `null`/`undefined`. On a `[name]` input inside `gg-data-form`, overrides the prefill source path while leaving the submitted name unchanged. |
+| `gg-field="<dot.path>"` | descendant | writes `textContent` (or `src` on `<img>`) | Set from the parent record. Skipped if the path resolves to `null`/`undefined`. On `<img>` the value is written to `src` instead of `textContent`. On a `[name]` input inside `gg-data-form`, overrides the prefill source path while leaving the submitted name unchanged. |
 | `gg-field-list="<dot.path>"` | descendant of `gg-data` | reads | Clones `[gg-list-template]` per item in the array at `<dot.path>` on the parent record. Same per-row population as `gg-data-list`, sourced from a sibling record field. Composes recursively. |
 | `gg-list-template` | child of `gg-data-list` or `gg-field-list` | — | The template element to clone per record. The original stays in the DOM (hidden via the engine). |
 
