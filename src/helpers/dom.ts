@@ -25,17 +25,21 @@ export function querySelectorAllDeep<T extends Element = Element>(
 /**
  * Set textContent on every [gg-field] descendant of `root` to the value
  * at that field's dot-path on `record`. On <img> elements the value is
- * written to `src` instead. Null / missing values are left as-is (keeps
- * whatever the markup's default content was).
+ * written to `src` instead, and a null / missing value removes the src
+ * attribute so CSS can hide it via img:not([src]). For other elements,
+ * null / missing values are left as-is (keeps the markup's default).
  */
 export function populateFields(root: Element, record: unknown): void {
   root.querySelectorAll<HTMLElement>("[gg-field]").forEach((el) => {
     const path = el.getAttribute("gg-field");
     if (!path) return;
     const value = getPath(record, path);
-    if (value == null) return;
-    if (el instanceof HTMLImageElement) el.src = String(value);
-    else el.textContent = String(value);
+    if (el instanceof HTMLImageElement) {
+      if (value == null) el.removeAttribute("src");
+      else el.src = String(value);
+      return;
+    }
+    if (value != null) el.textContent = String(value);
   });
 }
 
